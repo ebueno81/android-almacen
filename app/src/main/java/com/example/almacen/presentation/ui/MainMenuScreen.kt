@@ -30,6 +30,7 @@ import com.example.almacen.presentation.ui.component.QuickItem
 
 @Composable
 fun MainMenuScreen(
+    displayName: String,
     onActividad: () -> Unit,
     onClientes: () -> Unit,
     onAlmacen: () -> Unit,
@@ -41,7 +42,7 @@ fun MainMenuScreen(
     Scaffold(
         topBar = {
             MainHeader(
-                title = "Hola, Edwin",
+                title = "Hola, $displayName",
                 subtitle = "Bienvenido",
                 onNotifications = { /* TODO */ }
             )

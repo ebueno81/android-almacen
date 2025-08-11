@@ -2,7 +2,7 @@ package com.example.almacen.feature_login.data.di
 
 import com.example.almacen.feature_login.data.remote.api.AuthApi
 import com.example.almacen.feature_login.domain.repository.AuthRepository
-import com.example.almacen.feature_login.domain.repository.AuthRepositoryImpl
+import com.example.almacen.feature_login.data.repository.AuthRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -15,7 +15,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class  AuthBindModule{
-    @Binds @Singleton
+    @Binds
+    @Singleton
     abstract fun bindAuthRepository(impl: AuthRepositoryImpl): AuthRepository
 }
 
