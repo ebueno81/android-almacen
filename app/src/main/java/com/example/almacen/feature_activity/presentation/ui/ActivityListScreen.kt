@@ -1,8 +1,10 @@
 package com.example.almacen.feature_activity.presentation.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -79,6 +81,10 @@ fun ActivityListScreen(
                         ) {
                             Column(Modifier.padding(16.dp)) {
                                 Text(
+                                    text = "Codigo: ${act.id}",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
                                     text = "Cliente: ${act.clientNombre}",
                                     style = MaterialTheme.typography.bodyLarge
                                 )
@@ -86,14 +92,17 @@ fun ActivityListScreen(
                                     text = "Fecha: ${act.fechaCreacion ?: "-"}",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                                Text(
-                                    text = "Guía: ${act.nroGuia}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "Peso total: ${act.totalPeso}",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row (modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween){
+                                    Text(
+                                        text = "Guía: ${act.nroSerie + "-" + act.nroGuia}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = "Peso total: ${act.totalPeso}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             }
                         }
                     }

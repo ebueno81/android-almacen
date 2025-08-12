@@ -6,7 +6,7 @@ data class ActivityDto(
     val nroGuia: String,
     val observacion: String?,
     val clientId: String,
-    val clientNombre: String,
+    val clientNombre: String?,
     val storeId: String,
     val storeNombre: String,
     val userId: String?,
