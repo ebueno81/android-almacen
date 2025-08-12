@@ -1,5 +1,6 @@
 package com.example.almacen.presentation.ui
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,16 +18,18 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.almacen.feature_activity.presentation.ActivityListActivity
+import com.example.almacen.presentation.ui.component.MainBottomBar
 import com.example.almacen.presentation.ui.component.MainHeader
 import com.example.almacen.presentation.ui.component.QuickActionsGrid
-import com.example.almacen.presentation.ui.component.MainBottomBar
+import com.example.almacen.presentation.ui.component.QuickItem
 import com.example.almacen.presentation.ui.component.SearchBlock
 import com.example.almacen.presentation.ui.component.SectionTitle
-import androidx.compose.material3.Text
-import com.example.almacen.presentation.ui.component.QuickItem
 
 @Composable
 fun MainMenuScreen(
@@ -38,6 +41,7 @@ fun MainMenuScreen(
     onArticulos: () -> Unit
 ) {
     val cs = MaterialTheme.colorScheme
+    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -50,7 +54,11 @@ fun MainMenuScreen(
         bottomBar = {
             MainBottomBar(
                 onHome = { /* stay */ },
-                onActividad = onActividad,
+                onActividad = {
+                    context.startActivity(
+                        Intent(context, ActivityListActivity::class.java)
+                    )
+                },
                 onClientes = onClientes,
                 onAlmacen = onAlmacen,
                 onUsuario = onUsuario
@@ -74,7 +82,11 @@ fun MainMenuScreen(
             // Accesos rápidos (tarjetas)
             QuickActionsGrid(
                 items = listOf(
-                    QuickItem("Actividad", Icons.Filled.Assignment, onActividad),
+                    QuickItem("Actividad", Icons.Filled.Assignment){
+                        context.startActivity(
+                            Intent(context, ActivityListActivity::class.java)
+                        )
+                    },
                     QuickItem("Clientes",  Icons.Filled.Groups,     onClientes),
                     QuickItem("Almacén",   Icons.Filled.Store,      onAlmacen),   // ← en vez de Warehouse
                     QuickItem("Usuario",   Icons.Filled.Person,     onUsuario),

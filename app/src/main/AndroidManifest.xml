@@ -30,11 +30,13 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Almacen">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.Almacen" />
+        <activity
+            android:name=".feature_activity.presentation.ActivityListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".feature_activity.presentation.ActivityDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
