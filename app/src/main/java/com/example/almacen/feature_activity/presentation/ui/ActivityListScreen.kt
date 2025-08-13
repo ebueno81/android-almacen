@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +29,7 @@ import com.example.almacen.feature_activity.presentation.viewmodel.ActivityListV
 @Composable
 fun ActivityListScreen(
     onActivityClick: (Long) -> Unit,
+    onCreateNew: () -> Unit,
     vm: ActivityListViewModel = hiltViewModel()
 ) {
     val state = vm.state.collectAsState()
@@ -43,6 +45,14 @@ fun ActivityListScreen(
                     containerColor = MaterialTheme.colorScheme.secondary,
                     titleContentColor = MaterialTheme.colorScheme.onSecondary
                 ))
+        },
+        floatingActionButton = {            // <--- FAB “Nuevo”
+            androidx.compose.material3.FloatingActionButton(onClick = onCreateNew) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Add,
+                    contentDescription = "Nuevo"
+                )
+            }
         }
     ) { padding ->
         when {

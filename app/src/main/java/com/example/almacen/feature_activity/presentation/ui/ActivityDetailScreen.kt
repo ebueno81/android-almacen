@@ -2,20 +2,16 @@ package com.example.almacen.feature_activity.presentation.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.almacen.feature_activity.presentation.ui.components.ActivityDetailsReadOnlyCard
+import com.example.almacen.feature_activity.presentation.ui.components.ActivityHeaderReadOnly
 import com.example.almacen.feature_activity.presentation.viewmodel.ActivityDetailViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,7 +53,7 @@ fun ActivityDetailScreen(
     ) { inner ->
         when {
             state.value.isLoading -> {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     Modifier
                         .fillMaxSize()
                         .padding(inner),
@@ -80,58 +78,43 @@ fun ActivityDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(inner),
-                    contentPadding = PaddingValues(16.dp)
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item {
-                        Row(modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Código: ${act.id}", style = MaterialTheme.typography.titleMedium)
-                            Text("Guía: ${act.nroSerie}-${act.nroGuia}")
-                        }
-                        Text("Fecha: ${act.fechaCreacion ?: "-"}")
-                        Text("Cliente: ${act.clientNombre}")
-                        Text("Almacen: ${act.storeNombre}")
-                        Text("Motivo: ${act.reasonNombre}")
-                        Text("Observación: ${act.observacion ?: "-"}")
+                        ActivityHeaderReadOnly(
+                            id = act.id,
+                            nroSerie = act.nroSerie,
+                            nroGuia = act.nroGuia,
+                            fechaCreacion = act.fechaCreacion,
+                            clientNombre = act.clientNombre,
+                            storeNombre = act.storeNombre,
+                            reasonNombre = act.reasonNombre,
+                            observacion = act.observacion
+                        )
+
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "DETALLES",
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(color=Color(0xFF8BC34A)) // fondo verde del tema
+                                .background(color = Color(0xFF8BC34A))
                                 .padding(vertical = 8.dp),
                             textAlign = TextAlign.Center,
-                            color = Color.White // letra blanca
+                            color = Color.White
                         )
-
-                        Spacer(Modifier.height(12.dp))
                     }
 
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth()
-                                .padding(horizontal = 1.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
-                        ) {
-                            Column {
-                                act.detalles.forEachIndexed { idx, det ->
-                                    Text(
-                                        modifier = Modifier.padding(16.dp),
-                                        text = "N° Lote: ${det.lote}\n" +
-                                                "Artículo: ${det.articuloId} - ${det.nombreArticulo ?: "-"}\n" +
-                                                "Peso: ${det.peso} | Cajas: ${det.cajas}"
-                                    )
-                                    if (idx < act.detalles.lastIndex) {
-                                        Divider(color = MaterialTheme.colorScheme.surfaceVariant)
-                                    }
-                                }
-                            }
-                        }
+                        ActivityDetailsReadOnlyCard(
+                            detalles = act.detalles,
+                            getLote = { it.lote },
+                            getArticuloId = { it.articuloId },
+                            getNombreArticulo = { it.nombreArticulo },
+                            getPeso = { it.peso },
+                            getCajas = { it.cajas }
+                        )
                     }
 
                     item { Spacer(Modifier.height(12.dp)) }

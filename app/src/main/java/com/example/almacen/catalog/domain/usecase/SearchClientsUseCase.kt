@@ -1,14 +1,18 @@
 package com.example.almacen.catalog.domain.usecase
 
-import androidx.paging.PagingData
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import com.example.almacen.catalog.data.remote.api.CatalogApi
+import com.example.almacen.catalog.data.remote.paging.ClientPagingSource
 import com.example.almacen.catalog.domain.model.Client
-import com.example.almacen.catalog.domain.repository.CatalogRepository
-import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class SearchClientsUseCase @Inject constructor(
-    private val repo: CatalogRepository
+    private val api: CatalogApi
 ) {
-    operator fun invoke(query: String?): Flow<PagingData<Client>> =
-        repo.searchClients(query = query) // <- Flow<PagingData<Client>>
+    operator fun invoke(query: String?): Pager<Int, Client> =
+        Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false),
+            pagingSourceFactory = { ClientPagingSource(api, pageSize = 20, sort = "nombreCliente,ASC", query = query) }
+        )
 }

@@ -39,7 +39,7 @@ class CatalogRepositoryImpl(
             .flow
             .map { pagingData ->                      // kotlinx.coroutines.flow.map
                 pagingData.map { dto ->               // androidx.paging.map
-                    Client(dto.id, dto.nombreCliente)
+                    Client(dto.id, dto.nombre)
                 }
             }
 }

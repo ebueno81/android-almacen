@@ -37,6 +37,9 @@
         <activity
             android:name=".feature_activity.presentation.ActivityDetailActivity"
             android:exported="false" />
+        <activity
+            android:name=".feature_activity.presentation.NewActivityActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -1,7 +1,7 @@
 package com.example.almacen.feature_activity.data.remote.api
 
 import com.example.almacen.feature_activity.data.remote.dto.ActivityDto
-import com.example.almacen.feature_activity.data.remote.dto.CreateActivityRequest
+import com.example.almacen.feature_activity.data.remote.dto.ActivityRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -16,5 +16,5 @@ interface ActivityApi {
     suspend fun get(@Path("id") id: Long): ActivityDto
 
     @POST("api/activity")
-    suspend fun create(@Body body: CreateActivityRequest): ActivityDto
+    suspend fun create(@Body body: ActivityRequest): ActivityDto
 }
