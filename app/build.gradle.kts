@@ -44,6 +44,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.paging.common.jvm)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.activity.compose)
@@ -85,5 +86,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
 
 }
