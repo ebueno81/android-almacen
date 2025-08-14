@@ -14,12 +14,20 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    private const val BASE_URL = "http://10.0.2.2:8080/"
-
+   // private const val BASE_URL = "http://10.0.2.2:8080/"
+    //private const val BASE_URL = "http://45.149.207.118:5015/"
+    private const val BASE_URL = "https://apps.fastdye.pe/"
     @Provides @Singleton
     fun provideOkHttp(): OkHttpClient =
         OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY })
+            .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS) // Tiempo para conectar
+            .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)    // Tiempo para leer la respuesta
+            .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)   // Tiempo para enviar el cuerpo
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
             .build()
 
     @Provides @Singleton
