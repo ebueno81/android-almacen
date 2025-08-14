@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun MainBottomBar(
+    current: MainTab,                // 👈 NUEVO
     onHome: () -> Unit,
     onActividad: () -> Unit,
     onClientes: () -> Unit,
@@ -22,24 +23,34 @@ fun MainBottomBar(
 ) {
     NavigationBar {
         NavigationBarItem(
-            selected = true, onClick = onHome,
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") }, label = { Text("Home") }
+            selected = current == MainTab.Home,
+            onClick = onHome,
+            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            label = { Text("Home") }
         )
         NavigationBarItem(
-            selected = false, onClick = onActividad,
-            icon = { Icon(Icons.Default.Assignment, contentDescription = "Actividad") }, label = { Text("Actividad") }
+            selected = current == MainTab.Actividad,
+            onClick = onActividad,
+            icon = { Icon(Icons.Default.Assignment, contentDescription = "Actividad") },
+            label = { Text("Actividad") }
         )
         NavigationBarItem(
-            selected = false, onClick = onClientes,
-            icon = { Icon(Icons.Default.Groups, contentDescription = "Clientes") }, label = { Text("Clientes") }
+            selected = current == MainTab.Clientes,
+            onClick = onClientes,
+            icon = { Icon(Icons.Default.Groups, contentDescription = "Clientes") },
+            label = { Text("Clientes") }
         )
         NavigationBarItem(
-            selected = false, onClick = onAlmacen,
-            icon = { Icon(Icons.Default.Warehouse, contentDescription = "Almacén") }, label = { Text("Almacén") }
+            selected = current == MainTab.Almacen,
+            onClick = onAlmacen,
+            icon = { Icon(Icons.Default.Warehouse, contentDescription = "Almacén") },
+            label = { Text("Almacén") }
         )
         NavigationBarItem(
-            selected = false, onClick = onUsuario,
-            icon = { Icon(Icons.Default.Person, contentDescription = "Usuario") }, label = { Text("Usuario") }
+            selected = current == MainTab.Usuario,
+            onClick = onUsuario,
+            icon = { Icon(Icons.Default.Person, contentDescription = "Usuario") },
+            label = { Text("Usuario") }
         )
     }
 }

@@ -7,10 +7,9 @@ import com.example.almacen.catalog.domain.model.Client
 
 class ClientPagingSource(
     private val api: CatalogApi,
-    private val pageSize: Int,
     private val sort: String,
     private val query: String?
-) : PagingSource<Int, Client>() {   // <-- ahora Client, no ClientDto
+) : PagingSource<Int, Client>() {
 
     override fun getRefreshKey(state: PagingState<Int, Client>): Int? =
         state.anchorPosition?.let { anchor ->
@@ -20,16 +19,31 @@ class ClientPagingSource(
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Client> = try {
         val page = params.key ?: 0
-        val resp = api.getClients(page = page, size = pageSize, sort = sort, q = query)
+        val size = params.loadSize.coerceAtMost(50) // o tu pageSize si quieres fijo
 
-        val items: List<Client> = resp.content.map { dto ->
-            Client(id = dto.id, nombre = dto.nombreCliente)
+        val resp = api.getClients(
+            page = page,
+            size = size,
+            q = query?.takeIf { it.isNotBlank() },
+            sort = sort
+        )
+
+        val items: List<Client> = resp.content.orEmpty().map { dto ->
+            Client(
+                id = dto.id,                       // asegúrate que el DTO tenga estos campos
+                nombre = dto.nombreCliente ?: ""   // null-safe
+            )
         }
 
-        val nextKey = if (resp.last == true || items.isEmpty()) null else page + 1
+        val isLast = resp.last == true || items.isEmpty()
+        val nextKey = if (isLast) null else page + 1
         val prevKey = if (page == 0) null else page - 1
 
-        LoadResult.Page(items, prevKey, nextKey)
+        LoadResult.Page(
+            data = items,
+            prevKey = prevKey,
+            nextKey = nextKey
+        )
     } catch (e: Exception) {
         LoadResult.Error(e)
     }

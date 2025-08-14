@@ -36,19 +36,29 @@ android {
     kotlinOptions { jvmTarget = "11" }
 
     buildFeatures { compose = true }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
 }
 
 dependencies {
-    // Compose BOM + UI
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    debugImplementation(libs.androidx.ui.tooling)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.activity.compose)
+    // ===== Compose (UN SOLO BOM) =====
+    implementation(platform("androidx.compose:compose-bom:2024.10.00"))
 
-    // Icons + foundation (FlowRow)
+    // UI base
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Material 3 (SIN versión; la pone el BOM)
+    implementation("androidx.compose.material3:material3")
+
+    // Activity Compose
+    implementation("androidx.activity:activity-compose:1.9.2")
+
+    // Icons + foundation
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.foundation:foundation")
 
@@ -57,11 +67,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-    implementation("com.squareup.moshi:moshi:1.15.1")                // 👈 agregado
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")         // 👈 agregado
-
-    // (Opcional para máximo performance con codegen)
-    // kapt("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
+    implementation("com.squareup.moshi:moshi:1.15.1")
+    implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
@@ -74,21 +81,20 @@ dependencies {
     kapt("com.google.dagger:hilt-android-compiler:2.52")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
-    // Coil (si lo usas)
-    implementation("io.coil-kt:coil-compose:2.6.0")
-
-    // Tests
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-
+    // Paging
     implementation("androidx.paging:paging-runtime-ktx:3.3.2")
     implementation("androidx.paging:paging-compose:3.3.2")
 
-    implementation("androidx.compose.material3:material3:1.3.1")
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.6.0")
 
+    // Tests
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.10.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

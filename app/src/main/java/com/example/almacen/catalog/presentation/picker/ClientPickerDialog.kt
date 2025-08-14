@@ -41,10 +41,15 @@ fun ClientPickerDialog(
     pagingFlow: Flow<PagingData<Client>>,
     onQueryChange: (String?) -> Unit
 ) {
-    val clients = pagingFlow.collectAsLazyPagingItems()
     var query by remember { mutableStateOf("") }
+    val canSearch = query.trim().length >= 3
 
-    LaunchedEffect(query) { onQueryChange(query.takeIf { it.isNotBlank() }) }
+    // Importante: solo notificar al VM cuando hay 3+ letras; si no, null (lista vacía)
+    LaunchedEffect(query) {
+        onQueryChange(if (canSearch) query.trim() else null)
+    }
+
+    val clients = pagingFlow.collectAsLazyPagingItems()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -55,11 +60,29 @@ fun ClientPickerDialog(
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Buscar…") },
+                    label = { Text("Buscar… (mín. 3 letras)") },
                     singleLine = true,
                     trailingIcon = { Icon(Icons.Filled.Search, null) },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                // Si todavía no se puede buscar, NO mostramos la lista ni el spinner
+                if (!canSearch) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(240.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Escribe al menos 3 letras para buscar",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    return@AlertDialog
+                }
+
+                // A partir de aquí sí mostramos resultados / estados de carga
                 LazyColumn(Modifier.height(420.dp)) {
                     items(clients.itemCount) { idx ->
                         clients[idx]?.let { c ->
@@ -74,6 +97,7 @@ fun ClientPickerDialog(
                             Divider()
                         }
                     }
+
                     when {
                         clients.loadState.refresh is LoadState.Loading ->
                             item { CenteredProgress() }
@@ -83,6 +107,15 @@ fun ClientPickerDialog(
                             item { ErrorRow("Error cargando") }
                         clients.loadState.append is LoadState.Error ->
                             item { ErrorRow("Error al paginar") }
+                        clients.itemCount == 0 && clients.loadState.refresh is LoadState.NotLoading ->
+                            item {
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) { Text("Sin resultados para “${query.trim()}”") }
+                            }
                     }
                 }
             }
@@ -93,7 +126,9 @@ fun ClientPickerDialog(
 @Composable
 private fun CenteredProgress() {
     Box(
-        Modifier.fillMaxWidth().padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) { CircularProgressIndicator() }
 }
@@ -101,7 +136,9 @@ private fun CenteredProgress() {
 @Composable
 private fun ErrorRow(msg: String) {
     Box(
-        Modifier.fillMaxWidth().padding(16.dp),
+        Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         contentAlignment = Alignment.Center
     ) { Text(msg) }
 }

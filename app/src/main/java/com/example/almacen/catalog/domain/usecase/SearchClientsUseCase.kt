@@ -13,6 +13,12 @@ class SearchClientsUseCase @Inject constructor(
     operator fun invoke(query: String?): Pager<Int, Client> =
         Pager(
             config = PagingConfig(pageSize = 20, enablePlaceholders = false),
-            pagingSourceFactory = { ClientPagingSource(api, pageSize = 20, sort = "nombreCliente,ASC", query = query) }
+            pagingSourceFactory = {
+                ClientPagingSource(
+                    api = api,
+                    sort = "nombreCliente,ASC",
+                    query = query
+                )
+            }
         )
 }

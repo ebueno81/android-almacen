@@ -11,27 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,72 +40,70 @@ import com.example.almacen.catalog.domain.model.Article
 import com.example.almacen.catalog.presentation.picker.ClientPickerDialog
 import com.example.almacen.catalog.presentation.picker.ReasonDropdown
 import com.example.almacen.catalog.presentation.picker.StoreDropdown
-import com.example.almacen.feature_activity.presentation.viewmodel.NewActivityViewModel
+import com.example.almacen.core.ui.components.AppCard
+import com.example.almacen.core.ui.components.AppScaffold
+import com.example.almacen.feature_activity.presentation.viewmodel.ActivityEditorViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewActivityScreen(
+fun ActivityEditorScreen(
     onBack: () -> Unit,
-    onCreated: (Long) -> Unit,
-    vm: NewActivityViewModel = hiltViewModel()
+    vm: ActivityEditorViewModel = hiltViewModel()
 ) {
-    // Carga catálogos al entrar
-    LaunchedEffect(Unit) { vm.loadStaticLists() }
+    val ui by vm.state.collectAsState()
 
-    // Navegar cuando se cree
-    val uiState by vm.state.collectAsState()
-    LaunchedEffect(uiState.createdActivity?.id) {
-        uiState.createdActivity?.id?.let(onCreated)
-    }
-
+    // diálogos
     var showClientPicker by remember { mutableStateOf(false) }
     var showArticlePickerIndex by remember { mutableStateOf<Int?>(null) }
 
     val canSubmit =
-        vm.selectedClient != null &&
+        !vm.readOnly &&
+                vm.selectedClient != null &&
                 vm.selectedStore  != null &&
                 vm.selectedReason != null &&
-                vm.detalles.isNotEmpty()
+                vm.detalles.isNotEmpty() &&
+                !ui.isLoading
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Nueva actividad") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
+    AppScaffold(
+        title = when {
+            vm.activityId == null -> "Nueva actividad"
+            vm.readOnly          -> "Detalle de actividad"
+            else                 -> "Editar actividad"
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text(if (uiState.isLoading) "Guardando…" else "Guardar") },
-                icon = { Icon(Icons.Filled.Check, contentDescription = null) },
-                onClick = { if (!uiState.isLoading && canSubmit) vm.createFromState() }
-            )
+        onBack = onBack,
+        fab = {
+            if (vm.readOnly) {
+                ExtendedFloatingActionButton(
+                    onClick = { vm.enterEdit() },
+                    icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                    text = { Text("Editar") }
+                )
+            } else {
+                ExtendedFloatingActionButton(
+                    onClick = { if (canSubmit) vm.save() },
+                    icon = { Icon(Icons.Filled.Check, contentDescription = null) },
+                    text = { Text(if (ui.isLoading) "Guardando…" else "Guardar") }
+                )
+            }
         }
-    ) { innerPadding: PaddingValues ->
-
-        // ======= CONTENIDO =======
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(padding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            // Cliente
+            // Cliente (readonly + clic para abrir picker)
             item {
                 OutlinedTextField(
                     value = vm.selectedClient?.nombre ?: "",
                     onValueChange = {},
                     label = { Text("Cliente") },
+                    enabled = false,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showClientPicker = true },
-                    enabled = false,
+                        .clickable(enabled = !vm.readOnly) { showClientPicker = true },
                     trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) }
                 )
             }
@@ -120,7 +113,7 @@ fun NewActivityScreen(
                 StoreDropdown(
                     stores = vm.stores,
                     selected = vm.selectedStore,
-                    onSelected = vm::selectStore
+                    onSelected = { if (!vm.readOnly) vm.selectStore(it) }
                 )
             }
 
@@ -129,7 +122,7 @@ fun NewActivityScreen(
                 ReasonDropdown(
                     reasons = vm.reasons,
                     selected = vm.selectedReason,
-                    onSelected = vm::selectReason
+                    onSelected = { if (!vm.readOnly) vm.selectReason(it) }
                 )
             }
 
@@ -137,19 +130,21 @@ fun NewActivityScreen(
             item {
                 OutlinedTextField(
                     value = vm.nroGuia,
-                    onValueChange = vm::onNroGuiaChange,
+                    onValueChange = { if (!vm.readOnly) vm.onNroGuiaChange(it) },
                     label = { Text("N° Guía") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    enabled = !vm.readOnly,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            // Serie de Guía
+            // Serie
             item {
                 OutlinedTextField(
-                    value = vm.serieGuia,
-                    onValueChange = vm::onSerieGuiaChange,
+                    value = vm.nroSerie,
+                    onValueChange = { if (!vm.readOnly) vm.onNroSerieChange(it) },
                     label = { Text("Serie de Guía") },
+                    enabled = !vm.readOnly,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -158,24 +153,21 @@ fun NewActivityScreen(
             item {
                 OutlinedTextField(
                     value = vm.observaciones,
-                    onValueChange = vm::onObservacionesChange,
+                    onValueChange = { if (!vm.readOnly) vm.onObservacionesChange(it) },
                     label = { Text("Observaciones") },
+                    enabled = !vm.readOnly,
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )
             }
 
             item { Divider() }
-            item { Text("DETALLES") }
+            item { Text("DETALLES", style = MaterialTheme.typography.titleMedium) }
 
-            // Detalle
+            // Detalles
             items(vm.detalles.size) { idx ->
                 val row = vm.detalles[idx]
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(),
-                    elevation = CardDefaults.cardElevation(2.dp)
-                ) {
+                AppCard {
                     Column(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -187,90 +179,78 @@ fun NewActivityScreen(
                             enabled = false,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { showArticlePickerIndex = idx },
+                                .clickable(enabled = !vm.readOnly) { showArticlePickerIndex = idx },
                             trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) }
                         )
                         OutlinedTextField(
                             value = row.lote,
-                            onValueChange = { vm.updateDetailRow(idx, row.copy(lote = it)) },
+                            onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(lote = it)) },
                             label = { Text("N° Lote") },
+                            enabled = !vm.readOnly,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
                                 value = row.peso,
-                                onValueChange = { vm.updateDetailRow(idx, row.copy(peso = it)) },
+                                onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(peso = it)) },
                                 label = { Text("Peso") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                enabled = !vm.readOnly,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = row.cajas,
-                                onValueChange = { vm.updateDetailRow(idx, row.copy(cajas = it)) },
+                                onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(cajas = it)) },
                                 label = { Text("Cajas") },
-                                modifier = Modifier.weight(1f),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                enabled = !vm.readOnly,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
                             )
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = { vm.removeDetailRow(idx) }) {
-                                Text("Eliminar")
+                        if (!vm.readOnly) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                TextButton(onClick = { vm.removeDetailRow(idx) }) { Text("Eliminar") }
                             }
                         }
                     }
                 }
             }
 
-            item {
-                OutlinedButton(
-                    onClick = { vm.addDetailRow() },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("Agregar detalle") }
+            if (!vm.readOnly) {
+                item {
+                    OutlinedButton(
+                        onClick = { vm.addDetailRow() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Agregar detalle") }
+                }
             }
-
-            item { Spacer(Modifier.height(8.dp)) }
         }
-        // ======= FIN CONTENIDO =======
-    } // <-- cierre correcto del Scaffold
+    }
 
-    // ======= DIÁLOGOS =======
-
-    // Diálogo de clientes (paginado)
-    if (showClientPicker) {
+    // ===== Diálogos =====
+    if (showClientPicker && !vm.readOnly) {
         ClientPickerDialog(
             onDismiss = { showClientPicker = false },
-            onSelected = { c ->
-                vm.selectClient(c)
-                showClientPicker = false
-            },
+            onSelected = { c -> vm.selectClient(c); showClientPicker = false },
             pagingFlow = vm.clientPagingFlow,
-            onQueryChange = vm::onClientQueryChange // nombre nuevo para evitar choque de setter
+            onQueryChange = vm::onClientQueryChange
         )
     }
 
-    // Diálogo simple de artículos (lista local)
     val idx = showArticlePickerIndex
-    if (idx != null) {
+    if (idx != null && !vm.readOnly) {
         ArticlePickerDialog(
             onDismiss = { showArticlePickerIndex = null },
             articles = vm.articles,
             onSelected = { art ->
-                val row = vm.detalles[idx]
-                vm.updateDetailRow(idx, row.copy(articulo = art))
+                vm.updateDetailRow(idx, vm.detalles[idx].copy(articulo = art))
                 showArticlePickerIndex = null
             }
         )
     }
-    // ======= FIN DIÁLOGOS =======
 }
 
-/* ---------- Diálogo local para artículos (sin paging) ---------- */
+/* ---------- Diálogo local de artículos ---------- */
 @Composable
 private fun ArticlePickerDialog(
     onDismiss: () -> Unit,
@@ -298,8 +278,7 @@ private fun ArticlePickerDialog(
                 )
                 Spacer(Modifier.height(4.dp))
                 LazyColumn(modifier = Modifier.height(360.dp)) {
-                    items(filtered.size) { i ->
-                        val a = filtered[i]
+                    items(filtered) { a ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -309,7 +288,7 @@ private fun ArticlePickerDialog(
                             Text(a.nombre)
                             Text("ID: ${a.id}")
                         }
-                        if (i < filtered.lastIndex) Divider()
+                        Divider()
                     }
                 }
             }

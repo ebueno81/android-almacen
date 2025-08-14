@@ -35,10 +35,7 @@
             android:name=".feature_activity.presentation.ActivityListActivity"
             android:exported="false" />
         <activity
-            android:name=".feature_activity.presentation.ActivityDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".feature_activity.presentation.NewActivityActivity"
+            android:name=".feature_activity.presentation.ActivityEditorActivity"
             android:exported="false" />
     </application>
 

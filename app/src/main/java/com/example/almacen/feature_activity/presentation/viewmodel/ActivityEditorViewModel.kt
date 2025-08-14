@@ -1,0 +1,390 @@
+package com.example.almacen.feature_activity.presentation.viewmodel
+
+import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import com.example.almacen.catalog.domain.model.Article
+import com.example.almacen.catalog.domain.model.Client
+import com.example.almacen.catalog.domain.model.Reason
+import com.example.almacen.catalog.domain.model.Store
+import com.example.almacen.catalog.domain.usecase.GetArticlesUseCase
+import com.example.almacen.catalog.domain.usecase.GetReasonsUseCase
+import com.example.almacen.catalog.domain.usecase.GetStoresUseCase
+import com.example.almacen.catalog.domain.usecase.SearchClientsUseCase
+import com.example.almacen.feature_activity.domain.repository.ActivityFormDetail
+import com.example.almacen.feature_activity.domain.repository.ActivityRepository
+import com.example.almacen.feature_activity.presentation.model.NewActivityDetailDraft
+import com.example.almacen.feature_activity.presentation.model.NewActivityDraft
+import com.example.almacen.feature_activity.presentation.state.NewActivityState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ActivityEditorViewModel @Inject constructor(
+    private val repo: ActivityRepository,
+    private val getStores: GetStoresUseCase,
+    private val getReasons: GetReasonsUseCase,
+    private val getArticles: GetArticlesUseCase,
+    private val searchClients: SearchClientsUseCase
+) : ViewModel() {
+
+    // -------- UI STATE (catálogos) --------
+    var stores by mutableStateOf<List<Store>>(emptyList()); private set
+    var reasons by mutableStateOf<List<Reason>>(emptyList()); private set
+    var articles by mutableStateOf<List<Article>>(emptyList()); private set
+
+    // -------- Cabecera seleccionada --------
+    var selectedClient by mutableStateOf<Client?>(null); private set
+    var selectedStore by mutableStateOf<Store?>(null); private set
+    var selectedReason by mutableStateOf<Reason?>(null); private set
+
+    var nroGuia by mutableStateOf(""); private set
+    var nroSerie by mutableStateOf(""); private set
+    var observaciones by mutableStateOf(""); private set
+
+    // -------- Detalles (UI) --------
+    var detalles by mutableStateOf<List<NewActivityDetailDraft>>(emptyList()); private set
+
+    // Metadatos internos (alineados por índice con 'detalles')
+    private val detailIds = mutableListOf<Int?>()
+    private val dirtyIdx = mutableSetOf<Int>()
+    private val deletedIdx = mutableSetOf<Int>()
+
+    // -------- Estado general --------
+    private val _state = MutableStateFlow(NewActivityState())
+    val state: StateFlow<NewActivityState> = _state
+
+    /** id de actividad cuando ya existe (modo edición). Si es null => modo creación */
+    var activityId: Int? by mutableStateOf(null); private set
+
+    private var initialized = false
+    var readOnly by mutableStateOf(true); private set
+
+    // --- Originales (para fallback al guardar) ---
+    private var originalReasonId: String? = null
+    private var originalReasonName: String? = null
+
+    // -------- CLIENTES (Paging) --------
+    private var clientQuery by mutableStateOf<String?>(null)
+    val clientPagingFlow: Flow<PagingData<Client>> =
+        snapshotFlow { clientQuery }
+            .map { it?.trim() }          // normaliza espacios
+            .debounce(3000)              // 3 segundos de pausa
+            .flatMapLatest { q ->
+                // Solo buscar si hay 3+ caracteres; si no, lista vacía
+                if (q.isNullOrBlank() || q.length < 3) {
+                    flowOf(PagingData.empty())
+                } else {
+                    searchClients(q).flow
+                }
+            }
+            .cachedIn(viewModelScope)
+
+    fun onClientQueryChange(q: String?) { clientQuery = q }
+    fun selectClient(c: Client) { selectedClient = c }
+    fun selectStore(s: Store) { selectedStore = s }
+    fun selectReason(r: Reason) { selectedReason = r }
+    fun onNroGuiaChange(v: String) { nroGuia = v }
+    fun onNroSerieChange(v: String) { nroSerie = v }
+    fun onObservacionesChange(v: String) { observaciones = v }
+
+    fun enterReadOnly() { readOnly = true }
+    fun enterEdit() { readOnly = false }
+
+    fun initIfNeeded(activityIdFromIntent: Int?) {
+        if (initialized) return
+        initialized = true
+        Log.d("ActivityVM", "initIfNeeded vm=${this.hashCode()} id=$activityIdFromIntent")
+
+        loadStaticLists()
+
+        if (activityIdFromIntent != null && activityIdFromIntent > 0) {
+            openFromList(activityIdFromIntent) // carga y modo lectura
+        } else {
+            startNew() // modo creación
+        }
+    }
+
+    fun buildDraft(): NewActivityDraft = NewActivityDraft(
+        client = selectedClient,
+        store = selectedStore,
+        reason = selectedReason,
+        nroGuia = nroGuia,
+        serieGuia = nroSerie,
+        observaciones = observaciones,
+        detalles = detalles
+    )
+
+    fun loadStaticLists() {
+        viewModelScope.launch {
+            try {
+                stores = getStores()
+                reasons = getReasons()
+                articles = getArticles()
+
+                // Reconciliar motivo si estamos en edición y el seleccionado está vacío
+                if (activityId != null) {
+                    val needsReason =
+                        (selectedReason == null) || (selectedReason?.id.isNullOrBlank())
+                    if (needsReason) {
+                        val resolved = reasons.firstOrNull { it.id == originalReasonId }
+                            ?: reasons.firstOrNull { it.nombre.equals(originalReasonName ?: "", true) }
+                        if (resolved != null) {
+                            selectedReason = resolved
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    fun openFromList(id: Int) {
+        enterReadOnly()
+        loadForEdit(id)
+    }
+
+    fun startNew() {
+        activityId = null
+        enterEdit()
+        selectedClient = null
+        selectedStore = null
+        selectedReason = null
+        nroGuia = ""; nroSerie = ""; observaciones = ""
+        detalles = emptyList()
+        detailIds.clear(); dirtyIdx.clear(); deletedIdx.clear()
+        originalReasonId = null; originalReasonName = null
+    }
+
+    /** Cargar actividad existente para editar */
+    fun loadForEdit(id: Int) {
+        _state.value = _state.value.copy(isLoading = true, error = null)
+        viewModelScope.launch {
+            repo.get(id)
+                .onSuccess { a ->
+                    activityId = a.id.toInt()
+                    nroSerie = a.nroSerie
+                    nroGuia = a.nroGuia
+                    observaciones = a.observacion ?: ""
+
+                    selectedClient = Client(id = a.clientId, nombre = a.clientNombre ?: "")
+                    selectedStore = stores.firstOrNull { it.id == a.storeId }
+                        ?.let { it.copy(nombre = a.storeNombre) }
+                        ?: Store(id = a.storeId, nombre = a.storeNombre)
+
+                    // Guardar originales (para fallback)
+                    originalReasonId = a.idReason
+                    originalReasonName = a.reasonNombre
+
+                    // Intentar resolver contra catálogo si ya está cargado
+                    selectedReason =
+                        reasons.firstOrNull { it.id == a.idReason }
+                            ?: reasons.firstOrNull { it.nombre.equals(a.reasonNombre ?: "", true) }
+                                    ?: Reason(id = (a.idReason ?: ""), nombre = a.reasonNombre, tipo = "")
+
+                    detalles = a.detalles.map { srv ->
+                        val art: Article? = articles.firstOrNull { it.id.toLong() == srv.articuloId }
+                            ?: Article(id = srv.articuloId.toInt(), nombre = srv.nombreArticulo ?: "")
+                        NewActivityDetailDraft(
+                            articulo = art,
+                            lote = srv.lote,
+                            peso = srv.peso.toString(),
+                            cajas = srv.cajas.toString()
+                        )
+                    }
+                    detailIds.clear()
+                    detailIds.addAll(a.detalles.map { it.id?.toInt() })
+                    dirtyIdx.clear()
+                    deletedIdx.clear()
+
+                    _state.value = _state.value.copy(isLoading = false)
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(isLoading = false, error = e.message)
+                }
+        }
+    }
+
+    fun addDetailRow() {
+        detalles = detalles + NewActivityDetailDraft()
+        detailIds += null
+        dirtyIdx += (detalles.lastIndex)
+    }
+
+    fun updateDetailRow(index: Int, newValue: NewActivityDetailDraft) {
+        if (index !in detalles.indices) return
+        val copy = detalles.toMutableList()
+        copy[index] = newValue
+        detalles = copy
+        if (index !in deletedIdx) dirtyIdx += index
+    }
+
+    fun removeDetailRow(index: Int) {
+        if (index !in detalles.indices) return
+        val hasServerId = detailIds.getOrNull(index) != null
+        if (hasServerId) {
+            deletedIdx += index
+            dirtyIdx -= index
+        } else {
+            val copy = detalles.toMutableList().also { it.removeAt(index) }
+            detalles = copy
+            detailIds.removeAt(index)
+            dirtyIdx.remove(index)
+            deletedIdx.remove(index)
+            dirtyIdx.clear(); deletedIdx.clear()
+        }
+    }
+
+    private fun detallesVacias(): Set<NewActivityDetailDraft> =
+        detalles.filter { it.articulo?.id == null && it.lote.isBlank() && it.peso.isBlank() && it.cajas.isBlank() }
+            .toSet()
+
+    private fun setError(msg: String) {
+        _state.value = _state.value.copy(isLoading = false, error = msg)
+    }
+
+    private var saving = false
+    fun canSubmit(ui: NewActivityState): Boolean =
+        !readOnly && !saving && !ui.isLoading &&
+                selectedClient != null && selectedStore != null &&
+                // Para edición, permitimos que reason se resuelva por fallback si quedó en blanco
+                (selectedReason != null || (activityId != null && (!originalReasonId.isNullOrBlank() || !originalReasonName.isNullOrBlank()))) &&
+                detalles.isNotEmpty()
+
+    /** Cierra editor al terminar (emite savedId) */
+    fun save() {
+        Log.d("ActivityVM", "save() vm=${this.hashCode()} activityId=$activityId readOnly=$readOnly")
+        if (saving) return
+
+        val client = selectedClient ?: return setError("Selecciona cliente")
+        val store = selectedStore ?: return setError("Selecciona almacén")
+
+        // --- Resolver idReason de manera robusta ---
+        val selectedReasonId = selectedReason?.id?.takeIf { it.isNotBlank() }
+        val reasonIdForUpdate = selectedReasonId
+            ?: originalReasonId?.takeIf { it.isNotBlank() }
+            ?: reasons.firstOrNull { it.nombre.equals(originalReasonName ?: "", true) }?.id
+            ?: return setError("Selecciona motivo")
+
+        if (detalles.any {
+                it.articulo?.id == null &&
+                        (it.peso.isNotBlank() || it.cajas.isNotBlank() || it.lote.isNotBlank()) &&
+                        it !in detallesVacias()
+            }) return setError("Hay detalles sin artículo")
+
+        _state.value = _state.value.copy(isLoading = true, error = null)
+        saving = true
+
+        viewModelScope.launch {
+            try {
+                val id = activityId
+                if (id == null) {
+                    // CREATE
+                    val detallePairs = detalles.mapIndexedNotNull { _, d ->
+                        val artId = d.articulo?.id ?: return@mapIndexedNotNull null
+                        val peso = d.peso.toDoubleOrNull() ?: 0.0
+                        val cajas = d.cajas.toIntOrNull() ?: 0
+                        artId to ActivityFormDetail(lote = d.lote, peso = peso, cajas = cajas)
+                    }
+                    if (detallePairs.isEmpty()) {
+                        _state.value = _state.value.copy(isLoading = false)
+                        saving = false
+                        return@launch setError("Agrega al menos un detalle válido")
+                    }
+
+                    val created = repo.create(
+                        nroSerie = nroSerie,
+                        nroGuia = nroGuia,
+                        observacion = observaciones.ifBlank { null },
+                        clientId = client.id,
+                        storeId = store.id,
+                        idReason = reasonIdForUpdate,
+                        detalles = detallePairs
+                    ).getOrThrow()
+
+                    activityId = created.id.toInt()
+                    readOnly = true
+                    _state.value = _state.value.copy(isLoading = false, savedId = created.id)
+                    return@launch
+                } else {
+                    // UPDATE header
+                    val updatedHeader = repo.updateHeader(
+                        id = id,
+                        nroSerie = nroSerie,
+                        nroGuia = nroGuia,
+                        observacion = observaciones.ifBlank { null },
+                        clientId = client.id,
+                        storeId = store.id,
+                        idReason = reasonIdForUpdate
+                    ).getOrThrow()
+
+                    // CUD detalles
+                    val toCreate = buildList {
+                        detalles.forEachIndexed { idx, d ->
+                            if (detailIds.getOrNull(idx) == null && idx !in deletedIdx) {
+                                d.articulo?.id?.let { artId ->
+                                    add(artId to ActivityFormDetail(
+                                        lote = d.lote,
+                                        peso = d.peso.toDoubleOrNull() ?: 0.0,
+                                        cajas = d.cajas.toIntOrNull() ?: 0
+                                    ))
+                                }
+                            }
+                        }
+                    }
+                    val toUpdate = buildList {
+                        detalles.forEachIndexed { idx, d ->
+                            val detId = detailIds.getOrNull(idx)
+                            if (detId != null && idx in dirtyIdx && idx !in deletedIdx) {
+                                add(Triple(
+                                    detId,
+                                    d.articulo?.id ?: 0,
+                                    ActivityFormDetail(
+                                        lote = d.lote,
+                                        peso = d.peso.toDoubleOrNull() ?: 0.0,
+                                        cajas = d.cajas.toIntOrNull() ?: 0
+                                    )
+                                ))
+                            }
+                        }
+                    }
+                    val toDelete = buildList {
+                        deletedIdx.forEach { idx ->
+                            detailIds.getOrNull(idx)?.let { add(it) }
+                        }
+                    }
+
+                    if (toCreate.isNotEmpty() || toUpdate.isNotEmpty() || toDelete.isNotEmpty())
+                        repo.upsertDetails(id, toCreate, toUpdate, toDelete).getOrThrow()
+
+                    _state.value = _state.value.copy(isLoading = false, savedId = id.toLong())
+                    return@launch
+                }
+            } catch (e: Throwable) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Error al guardar"
+                )
+            } finally {
+                saving = false
+            }
+        }
+    }
+
+    fun consumeSavedEvent() {
+        _state.value = _state.value.copy(savedId = null)
+    }
+}

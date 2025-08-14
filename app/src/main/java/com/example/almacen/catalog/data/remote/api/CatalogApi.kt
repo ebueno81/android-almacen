@@ -25,7 +25,7 @@ interface CatalogApi {
     suspend fun getClients(
         @Query("page") page: Int,
         @Query("size") size: Int,
-        @Query("sort") sort: String = "nombreCliente,ASC",
-        @Query("q") q: String? = null
+        @Query("q") q: String? = null,
+        @Query("sort") sort: String = "nombreCliente,ASC"
     ): PageResponse<ClientDto>
 }

@@ -7,5 +7,6 @@ data class PageResponse<T>(
     val number: Int?,         // página actual (0-based)
     val size: Int?,           // tamaño de página
     val first: Boolean?,
-    val last: Boolean?
+    val last: Boolean?,
+    val numberOfElements: Int
 )
