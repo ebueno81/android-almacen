@@ -21,13 +21,14 @@ class ActivityListViewModel @Inject constructor(
     fun loadActivities() {
         _state.value = _state.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            repo.list()
+            repo.listHeaders()
                 .onSuccess { list ->
-                    _state.value = _state.value.copy(isLoading = false, activities = list)
+                    _state.value = _state.value.copy(isLoading = false, headers = list)
                 }
                 .onFailure { e ->
                     _state.value = _state.value.copy(isLoading = false, error = e.message)
                 }
         }
     }
+
 }

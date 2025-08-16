@@ -8,6 +8,8 @@ import com.example.almacen.feature_activity.data.remote.dto.ActivityRequest
 import com.example.almacen.feature_activity.data.remote.dto.UpdateActivityHeaderRequest
 import com.example.almacen.feature_activity.data.remote.dto.UpsertActivityDetailsRequest
 import com.example.almacen.feature_activity.domain.model.Activity
+import com.example.almacen.feature_activity.domain.model.ActivityDetail
+import com.example.almacen.feature_activity.domain.model.ActivityHeader
 import com.example.almacen.feature_activity.domain.repository.ActivityFormDetail
 import com.example.almacen.feature_activity.domain.repository.ActivityRepository
 import kotlinx.coroutines.flow.first
@@ -52,7 +54,7 @@ class ActivityRepositoryImpl @Inject constructor(
             usuarioModifica = userCode,
             detalles = detalles.map { (idArticulo, d) ->
                 ActivityDetailRequest(
-                    idArticulo = idArticulo,
+                    idArticulo = idArticulo.toLong(),
                     nroLote = d.lote,
                     peso = d.peso,
                     cajas = d.cajas
@@ -114,6 +116,32 @@ class ActivityRepositoryImpl @Inject constructor(
         )
         api.upsertDetails(id, req).toDomain()
     }
+
+    // ==== UPDATE DETAIL ====
+    override suspend fun updateDetail(
+        detailId: Long,
+        articuloId: Long,
+        lote: String,
+        peso: Double,
+        cajas: Int
+    ): Result<ActivityDetail> = runCatching {
+        val body = ActivityDetailRequest(
+            idArticulo = articuloId,
+            nroLote = lote,
+            peso = peso,
+            cajas = cajas
+        )
+        // Llamada a la API y mapeo con ActivityDetailMapper
+        api.updateDetail(detailId, body).toDomain()
+    }
+
+    override suspend fun listHeaders(): Result<List<ActivityHeader>> = runCatching {
+        api.getActivitiesHeaders()
+            .content   // 👈 asegúrate de que este sea el campo correcto en tu DTO
+            .map { dto -> dto.toDomain() }
+    }
+
+
 
     // ====== (Opcional) Backward compatibility ======
     // Si en tu ViewModel todavía llamas a get(Long) o create con userId, déjalos como “puentes”:

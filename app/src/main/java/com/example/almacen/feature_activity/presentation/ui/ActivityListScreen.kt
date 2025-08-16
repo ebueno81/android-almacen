@@ -87,8 +87,8 @@ fun ActivityListScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 contentPadding = PaddingValues(bottom = 84.dp) // margen para el bottom bar
             ) {
-                items(state.activities) { act ->
-                    AppCard(onClick = { onActivityClick(act.id) }) {
+                items(state.headers) { act ->
+                    AppCard(onClick = { onActivityClick(act.id.toLong()) }) {
                         Column(Modifier.padding(16.dp)) {
                             Text("Código: ${act.id}", style = MaterialTheme.typography.titleMedium)
                             Text("Cliente: ${act.clientNombre}")
@@ -103,7 +103,7 @@ fun ActivityListScreen(
                             }
                             Spacer(Modifier.height(8.dp))
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                TextButton(onClick = { onActivityClick(act.id) }) { Text("Editar") }
+                                TextButton(onClick = { onActivityClick(act.id.toLong()) }) { Text("Editar") }
                                 TextButton(onClick = { /* TODO: anular (placeholder) */ }) { Text("Anular") }
                             }
                         }

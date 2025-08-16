@@ -1,6 +1,8 @@
 package com.example.almacen.feature_activity.domain.repository
 
 import com.example.almacen.feature_activity.domain.model.Activity
+import com.example.almacen.feature_activity.domain.model.ActivityDetail
+import com.example.almacen.feature_activity.domain.model.ActivityHeader
 
 interface ActivityRepository {
 
@@ -38,6 +40,17 @@ interface ActivityRepository {
         toUpdate: List<Triple<Int, Int, ActivityFormDetail>>, // (idDetalle, idArticulo, data)
         toDelete: List<Int> // ids de detalle a borrar
     ): Result<Activity>
+
+    suspend fun updateDetail(
+        detailId: Long,
+        articuloId: Long,
+        lote: String,
+        peso: Double,
+        cajas: Int
+    ): Result<ActivityDetail>
+
+    suspend fun listHeaders(): Result<List<ActivityHeader>>
+
 }
 
 data class ActivityFormDetail(

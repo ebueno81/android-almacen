@@ -1,6 +1,10 @@
 package com.example.almacen.feature_activity.data.remote.api
 
+import com.example.almacen.catalog.data.remote.dto.PageResponse
+import com.example.almacen.feature_activity.data.remote.dto.ActivityDetailDto
+import com.example.almacen.feature_activity.data.remote.dto.ActivityDetailRequest
 import com.example.almacen.feature_activity.data.remote.dto.ActivityDto
+import com.example.almacen.feature_activity.data.remote.dto.ActivityHeaderDto
 import com.example.almacen.feature_activity.data.remote.dto.ActivityRequest
 import com.example.almacen.feature_activity.data.remote.dto.UpdateActivityHeaderRequest
 import com.example.almacen.feature_activity.data.remote.dto.UpsertActivityDetailsRequest
@@ -9,6 +13,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ActivityApi {
 
@@ -33,4 +38,17 @@ interface ActivityApi {
         @Path("id") id: Int,
         @Body body: UpsertActivityDetailsRequest
     ): ActivityDto
+
+    @PUT("api/activity/details/{detailId}")
+    suspend fun updateDetail(
+        @Path("detailId") detailId: Long,
+        @Body body: ActivityDetailRequest
+    ): ActivityDetailDto
+
+    @GET("api/activity/headers")
+    suspend fun getActivitiesHeaders(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 10
+    ): PageResponse<ActivityHeaderDto>
+
 }

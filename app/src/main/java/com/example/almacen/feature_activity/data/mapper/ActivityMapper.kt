@@ -1,8 +1,10 @@
 package com.example.almacen.feature_activity.data.mapper
 
 import com.example.almacen.feature_activity.data.remote.dto.ActivityDto
+import com.example.almacen.feature_activity.data.remote.dto.ActivityHeaderDto
 import com.example.almacen.feature_activity.domain.model.Activity
 import com.example.almacen.feature_activity.domain.model.ActivityDetail
+import com.example.almacen.feature_activity.domain.model.ActivityHeader
 
 fun ActivityDto.toDomain() = Activity(
     id = id,
@@ -29,4 +31,16 @@ fun ActivityDto.toDomain() = Activity(
         )
     },
     totalPeso = detalles.sumOf { it.peso }   // sin Elvis, coincide con DTO no nulo
+)
+
+fun ActivityHeaderDto.toDomain() = ActivityHeader(
+    id = id,
+    nroSerie = nroSerie,
+    nroGuia = nroGuia,
+    observacion = observacion,
+    clientNombre = clientNombre,
+    storeNombre = storeNombre,
+    reasonNombre = reasonNombre,
+    fechaCreacion = fechaCreacion,
+    totalPeso = totalPeso
 )

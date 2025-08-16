@@ -20,7 +20,6 @@ import com.example.almacen.catalog.domain.usecase.SearchClientsUseCase
 import com.example.almacen.feature_activity.domain.repository.ActivityFormDetail
 import com.example.almacen.feature_activity.domain.repository.ActivityRepository
 import com.example.almacen.feature_activity.presentation.model.NewActivityDetailDraft
-import com.example.almacen.feature_activity.presentation.model.NewActivityDraft
 import com.example.almacen.feature_activity.presentation.state.NewActivityState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -119,15 +118,15 @@ class ActivityEditorViewModel @Inject constructor(
         }
     }
 
-    fun buildDraft(): NewActivityDraft = NewActivityDraft(
-        client = selectedClient,
-        store = selectedStore,
-        reason = selectedReason,
-        nroGuia = nroGuia,
-        serieGuia = nroSerie,
-        observaciones = observaciones,
-        detalles = detalles
-    )
+//    fun buildDraft(): NewActivityDraft = NewActivityDraft(
+//        client = selectedClient,
+//        store = selectedStore,
+//        reason = selectedReason,
+//        nroGuia = nroGuia,
+//        serieGuia = nroSerie,
+//        observaciones = observaciones,
+//        detalles = detalles
+//    )
 
     fun loadStaticLists() {
         viewModelScope.launch {
