@@ -44,9 +44,10 @@ class ActivityEditorViewModel @Inject constructor(
     // -------- UI STATE (catálogos) --------
     var stores by mutableStateOf<List<Store>>(emptyList()); private set
     var reasons by mutableStateOf<List<Reason>>(emptyList()); private set
-    var articles by mutableStateOf<List<Article>>(emptyList()); private set
+    //var articles by mutableStateOf<List<Article>>(emptyList()); private set
 
     // -------- Cabecera seleccionada --------
+    var selectedArticle by mutableStateOf<Article?>(null); private set
     var selectedClient by mutableStateOf<Client?>(null); private set
     var selectedStore by mutableStateOf<Store?>(null); private set
     var selectedReason by mutableStateOf<Reason?>(null); private set
@@ -77,6 +78,26 @@ class ActivityEditorViewModel @Inject constructor(
     private var originalReasonId: String? = null
     private var originalReasonName: String? = null
 
+    // -------- ARTICULOS (Paginh) ------ //
+    var articles by mutableStateOf<List<Article>>(emptyList()); private set
+
+    var articleQuery by mutableStateOf<String?>(null)
+    val articlePagingFlow: Flow<PagingData<Article>> =
+        snapshotFlow { articleQuery }
+            .map { it?.trim() }
+            .debounce(300) // puedes bajar de 3000ms a 300ms para que se sienta más rápido
+            .flatMapLatest { q ->
+                if (q.isNullOrBlank() || q.length < 3) {
+                    flowOf(PagingData.empty())
+                } else {
+                    getArticles(q).flow  // ✅ igual que searchClients
+                }
+            }
+            .cachedIn(viewModelScope)
+
+    fun onArticleQueryChange(q: String?) { articleQuery = q }
+    fun selectArticle(a: Article) { selectedArticle = a }
+
     // -------- CLIENTES (Paging) --------
     private var clientQuery by mutableStateOf<String?>(null)
     val clientPagingFlow: Flow<PagingData<Client>> =
@@ -95,6 +116,7 @@ class ActivityEditorViewModel @Inject constructor(
 
     fun onClientQueryChange(q: String?) { clientQuery = q }
     fun selectClient(c: Client) { selectedClient = c }
+
     fun selectStore(s: Store) { selectedStore = s }
     fun selectReason(r: Reason) { selectedReason = r }
     fun onNroGuiaChange(v: String) { nroGuia = v }
@@ -123,7 +145,6 @@ class ActivityEditorViewModel @Inject constructor(
             try {
                 stores = getStores()
                 reasons = getReasons()
-                articles = getArticles()
 
                 // Reconciliar motivo si estamos en edición y el seleccionado está vacío
                 if (activityId != null) {
@@ -185,8 +206,9 @@ class ActivityEditorViewModel @Inject constructor(
                                     ?: Reason(id = (a.idReason ?: ""), nombre = a.reasonNombre, tipo = "")
 
                     detalles = a.detalles.map { srv ->
-                        val art: Article? = articles.firstOrNull { it.id.toLong() == srv.articuloId }
-                            ?: Article(id = srv.articuloId.toInt(), nombre = srv.nombreArticulo ?: "")
+                        val art = Article(
+                            id = srv.articuloId.toInt(),
+                            nombre = srv.nombreArticulo ?: "")
                         NewActivityDetailDraft(
                             articulo = art,
                             lote = srv.lote,
@@ -237,10 +259,6 @@ class ActivityEditorViewModel @Inject constructor(
         }
     }
 
-//    private fun detallesVacias(): Set<NewActivityDetailDraft> =
-//        detalles.filter { it.articulo?.id == null && it.lote.isBlank() && it.peso.isBlank() && it.cajas.isBlank() }
-//            .toSet()
-
     private fun setError(msg: String) {
         _state.value = _state.value.copy(
             isLoading = false,
@@ -255,13 +273,6 @@ class ActivityEditorViewModel @Inject constructor(
     }
 
     private var saving = false
-//    fun canSubmit(ui: NewActivityState): Boolean =
-//        !readOnly && !saving && !ui.isLoading &&
-//                selectedClient != null && selectedStore != null &&
-//                // Para edición, permitimos que reason se resuelva por fallback si quedó en blanco
-//                (selectedReason != null || (activityId != null && (!originalReasonId.isNullOrBlank() || !originalReasonName.isNullOrBlank()))) &&
-//                detalles.isNotEmpty()
-
     fun save() {
         Log.d("ActivityVM", "save() vm=${this.hashCode()} activityId=$activityId readOnly=$readOnly")
         if (saving) return

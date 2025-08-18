@@ -18,7 +18,12 @@ interface CatalogApi {
     suspend fun getReasons(): List<ReasonDto>
 
     @GET("/api/article")
-    suspend fun getArticles(): List<ArticleDto>
+    suspend fun getArticles(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("q") q: String? = null,
+        @Query("sort") sort: String = "nombreArticulo,ASC"
+    ): PageResponse<ArticleDto>
 
     // Clientes paginados: ej. /api/client?page=0&size=20&sort=nombreCliente,ASC
     @GET("/api/client")

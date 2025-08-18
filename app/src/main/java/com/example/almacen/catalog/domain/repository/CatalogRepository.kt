@@ -10,7 +10,12 @@ import kotlinx.coroutines.flow.Flow
 interface CatalogRepository {
     suspend fun getStores(): List<Store>
     suspend fun getReasons(): List<Reason>
-    suspend fun getArticles(): List<Article>
+
+    fun getArticles(
+        pageSize: Int = 20,
+        sort: String = "nombreArticulo,ASC",
+        query: String? = null
+    ): Flow<PagingData<Article>>
 
     fun searchClients(
         pageSize: Int = 20,
