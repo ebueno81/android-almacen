@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,6 +41,8 @@ import com.example.almacen.catalog.domain.model.Article
 import com.example.almacen.catalog.presentation.picker.ClientPickerDialog
 import com.example.almacen.catalog.presentation.picker.ReasonDropdown
 import com.example.almacen.catalog.presentation.picker.StoreDropdown
+import com.example.almacen.core.common.validators.isDecimal
+import com.example.almacen.core.common.validators.isNumeric
 import com.example.almacen.core.ui.components.AppCard
 import com.example.almacen.core.ui.components.AppScaffold
 import com.example.almacen.feature_activity.presentation.viewmodel.ActivityEditorViewModel
@@ -50,6 +53,19 @@ fun ActivityEditorScreen(
     vm: ActivityEditorViewModel = hiltViewModel()
 ) {
     val ui by vm.state.collectAsState()
+
+    ui.error?.let { err ->
+        AlertDialog(
+            onDismissRequest = { vm.clearError() },
+            confirmButton = {
+                TextButton(onClick = { vm.clearError() }) {
+                    Text("Aceptar")
+                }
+            },
+            title = { Text("Error") },
+            text = { Text(err) }
+        )
+    }
 
     // diálogos
     var showClientPicker by remember { mutableStateOf(false) }
@@ -126,27 +142,31 @@ fun ActivityEditorScreen(
                 )
             }
 
-            // N° Guía
+            // Serie y N° Guía en una sola fila
             item {
-                OutlinedTextField(
-                    value = vm.nroGuia,
-                    onValueChange = { if (!vm.readOnly) vm.onNroGuiaChange(it) },
-                    label = { Text("N° Guía") },
-                    enabled = !vm.readOnly,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // Serie
-            item {
-                OutlinedTextField(
-                    value = vm.nroSerie,
-                    onValueChange = { if (!vm.readOnly) vm.onNroSerieChange(it) },
-                    label = { Text("Serie de Guía") },
-                    enabled = !vm.readOnly,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    OutlinedTextField(
+                        value = vm.nroSerie,
+                        onValueChange = { if (!vm.readOnly) vm.onNroSerieChange(it) },
+                        label = { Text("Serie de Guía") },
+                        enabled = !vm.readOnly,
+                        modifier = Modifier.weight(0.4f) // cada campo ocupa mitad
+                    )
+                    OutlinedTextField(
+                        value = vm.nroGuia,
+                        onValueChange = {input ->
+                            if(input.isNumeric())
+                                if (!vm.readOnly) vm.onNroGuiaChange(input)
+                                        },
+                        label = { Text("N° Guía") },
+                        enabled = !vm.readOnly,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(0.6f)
+                    )
+                }
             }
 
             // Observaciones
@@ -157,9 +177,10 @@ fun ActivityEditorScreen(
                     label = { Text("Observaciones") },
                     enabled = !vm.readOnly,
                     modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
+                    minLines = 1
                 )
             }
+
 
             item { Divider() }
             item { Text("DETALLES", style = MaterialTheme.typography.titleMedium) }
@@ -182,17 +203,24 @@ fun ActivityEditorScreen(
                                 .clickable(enabled = !vm.readOnly) { showArticlePickerIndex = idx },
                             trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) }
                         )
-                        OutlinedTextField(
-                            value = row.lote,
-                            onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(lote = it)) },
-                            label = { Text("N° Lote") },
-                            enabled = !vm.readOnly,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
+                                value = row.lote,
+                                onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(lote = it)) },
+                                label = { Text("N° Lote") },
+                                enabled = !vm.readOnly,
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Characters
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
                                 value = row.peso,
-                                onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(peso = it)) },
+                                onValueChange = {input->
+                                    if(!vm.readOnly && input.isDecimal())
+                                        vm.updateDetailRow(idx,row.copy(peso=input))
+                                },
                                 label = { Text("Peso") },
                                 enabled = !vm.readOnly,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -200,7 +228,11 @@ fun ActivityEditorScreen(
                             )
                             OutlinedTextField(
                                 value = row.cajas,
-                                onValueChange = { if (!vm.readOnly) vm.updateDetailRow(idx, row.copy(cajas = it)) },
+                                onValueChange = {input->
+                                    if (!vm.readOnly && input.isNumeric()){
+                                        vm.updateDetailRow(idx,row.copy(cajas = input))
+                                    }
+                                                },
                                 label = { Text("Cajas") },
                                 enabled = !vm.readOnly,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

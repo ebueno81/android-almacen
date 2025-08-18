@@ -118,16 +118,6 @@ class ActivityEditorViewModel @Inject constructor(
         }
     }
 
-//    fun buildDraft(): NewActivityDraft = NewActivityDraft(
-//        client = selectedClient,
-//        store = selectedStore,
-//        reason = selectedReason,
-//        nroGuia = nroGuia,
-//        serieGuia = nroSerie,
-//        observaciones = observaciones,
-//        detalles = detalles
-//    )
-
     fun loadStaticLists() {
         viewModelScope.launch {
             try {
@@ -247,42 +237,37 @@ class ActivityEditorViewModel @Inject constructor(
         }
     }
 
-    private fun detallesVacias(): Set<NewActivityDetailDraft> =
-        detalles.filter { it.articulo?.id == null && it.lote.isBlank() && it.peso.isBlank() && it.cajas.isBlank() }
-            .toSet()
+//    private fun detallesVacias(): Set<NewActivityDetailDraft> =
+//        detalles.filter { it.articulo?.id == null && it.lote.isBlank() && it.peso.isBlank() && it.cajas.isBlank() }
+//            .toSet()
 
     private fun setError(msg: String) {
-        _state.value = _state.value.copy(isLoading = false, error = msg)
+        _state.value = _state.value.copy(
+            isLoading = false,
+            error = msg
+        )
+        saving = false
+        Log.e("ActivityVM", "❌ $msg")
+    }
+
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
     }
 
     private var saving = false
-    fun canSubmit(ui: NewActivityState): Boolean =
-        !readOnly && !saving && !ui.isLoading &&
-                selectedClient != null && selectedStore != null &&
-                // Para edición, permitimos que reason se resuelva por fallback si quedó en blanco
-                (selectedReason != null || (activityId != null && (!originalReasonId.isNullOrBlank() || !originalReasonName.isNullOrBlank()))) &&
-                detalles.isNotEmpty()
+//    fun canSubmit(ui: NewActivityState): Boolean =
+//        !readOnly && !saving && !ui.isLoading &&
+//                selectedClient != null && selectedStore != null &&
+//                // Para edición, permitimos que reason se resuelva por fallback si quedó en blanco
+//                (selectedReason != null || (activityId != null && (!originalReasonId.isNullOrBlank() || !originalReasonName.isNullOrBlank()))) &&
+//                detalles.isNotEmpty()
 
-    /** Cierra editor al terminar (emite savedId) */
     fun save() {
         Log.d("ActivityVM", "save() vm=${this.hashCode()} activityId=$activityId readOnly=$readOnly")
         if (saving) return
 
-        val client = selectedClient ?: return setError("Selecciona cliente")
-        val store = selectedStore ?: return setError("Selecciona almacén")
-
-        // --- Resolver idReason de manera robusta ---
-        val selectedReasonId = selectedReason?.id?.takeIf { it.isNotBlank() }
-        val reasonIdForUpdate = selectedReasonId
-            ?: originalReasonId?.takeIf { it.isNotBlank() }
-            ?: reasons.firstOrNull { it.nombre.equals(originalReasonName ?: "", true) }?.id
-            ?: return setError("Selecciona motivo")
-
-        if (detalles.any {
-                it.articulo?.id == null &&
-                        (it.peso.isNotBlank() || it.cajas.isNotBlank() || it.lote.isNotBlank()) &&
-                        it !in detallesVacias()
-            }) return setError("Hay detalles sin artículo")
+        // 🔹 Validación previa
+        validateBeforeSave()?.let { errorMsg -> return setError(errorMsg) }
 
         _state.value = _state.value.copy(isLoading = true, error = null)
         saving = true
@@ -291,46 +276,40 @@ class ActivityEditorViewModel @Inject constructor(
             try {
                 val id = activityId
                 if (id == null) {
-                    // CREATE
+                    // --- CREATE ---
                     val detallePairs = detalles.mapIndexedNotNull { _, d ->
                         val artId = d.articulo?.id ?: return@mapIndexedNotNull null
                         val peso = d.peso.toDoubleOrNull() ?: 0.0
                         val cajas = d.cajas.toIntOrNull() ?: 0
                         artId to ActivityFormDetail(lote = d.lote, peso = peso, cajas = cajas)
                     }
-                    if (detallePairs.isEmpty()) {
-                        _state.value = _state.value.copy(isLoading = false)
-                        saving = false
-                        return@launch setError("Agrega al menos un detalle válido")
-                    }
 
                     val created = repo.create(
                         nroSerie = nroSerie,
                         nroGuia = nroGuia,
                         observacion = observaciones.ifBlank { null },
-                        clientId = client.id,
-                        storeId = store.id,
-                        idReason = reasonIdForUpdate,
+                        clientId = selectedClient!!.id,
+                        storeId = selectedStore!!.id,
+                        idReason = selectedReason!!.id, // ya validado
                         detalles = detallePairs
                     ).getOrThrow()
 
                     activityId = created.id.toInt()
                     readOnly = true
                     _state.value = _state.value.copy(isLoading = false, savedId = created.id)
-                    return@launch
                 } else {
-                    // UPDATE header
-                    val updatedHeader = repo.updateHeader(
+                    // --- UPDATE HEADER ---
+                    repo.updateHeader(
                         id = id,
                         nroSerie = nroSerie,
                         nroGuia = nroGuia,
                         observacion = observaciones.ifBlank { null },
-                        clientId = client.id,
-                        storeId = store.id,
-                        idReason = reasonIdForUpdate
+                        clientId = selectedClient!!.id,
+                        storeId = selectedStore!!.id,
+                        idReason = selectedReason!!.id
                     ).getOrThrow()
 
-                    // CUD detalles
+                    // --- CUD detalles ---
                     val toCreate = buildList {
                         detalles.forEachIndexed { idx, d ->
                             if (detailIds.getOrNull(idx) == null && idx !in deletedIdx) {
@@ -366,11 +345,11 @@ class ActivityEditorViewModel @Inject constructor(
                         }
                     }
 
-                    if (toCreate.isNotEmpty() || toUpdate.isNotEmpty() || toDelete.isNotEmpty())
+                    if (toCreate.isNotEmpty() || toUpdate.isNotEmpty() || toDelete.isNotEmpty()) {
                         repo.upsertDetails(id, toCreate, toUpdate, toDelete).getOrThrow()
+                    }
 
                     _state.value = _state.value.copy(isLoading = false, savedId = id.toLong())
-                    return@launch
                 }
             } catch (e: Throwable) {
                 _state.value = _state.value.copy(
@@ -381,6 +360,42 @@ class ActivityEditorViewModel @Inject constructor(
                 saving = false
             }
         }
+    }
+
+    private fun validateBeforeSave(): String? {
+        // Validar cliente
+        if (selectedClient == null) return "Selecciona cliente"
+
+        // Validar almacén
+        if (selectedStore == null) return "Selecciona almacén"
+
+        // Validar motivo
+        val selectedReasonId = selectedReason?.id?.takeIf { it.isNotBlank() }
+        val reasonIdForUpdate = selectedReasonId
+            ?: originalReasonId?.takeIf { it.isNotBlank() }
+            ?: reasons.firstOrNull { it.nombre.equals(originalReasonName ?: "", true) }?.id
+
+        if (reasonIdForUpdate.isNullOrBlank()) return "Selecciona motivo"
+
+        // Validar nroSerie y nroGuia
+        if (nroSerie.isBlank()) return "Ingresa serie de guía"
+        if (nroGuia.isBlank()) return "Ingresa número de guía"
+
+        // Validar detalles incompletos
+        if (detalles.any {
+                it.articulo?.id == null &&
+                        (it.peso.isNotBlank() || it.cajas.isNotBlank() || it.lote.isNotBlank())
+            }
+        ) return "Hay detalles sin artículo asignado"
+
+        // Validar al menos un detalle válido
+        val detallePairs = detalles.mapNotNull { d ->
+            val artId = d.articulo?.id ?: return@mapNotNull null
+            artId to d
+        }
+        if (detallePairs.isEmpty()) return "Agrega al menos un detalle válido"
+
+        return null // ✅ si todo OK
     }
 
     fun consumeSavedEvent() {
