@@ -27,15 +27,18 @@ class ActivityListActivity : ComponentActivity() {
         setContent {
             AlmacenTheme {
                 ActivityListScreen(
-                    onActivityClick = { id ->
-                        // Conserva el tipo original (probablemente Int), clave "activityId"
+                    onOpenEditor = { id, startInEdit ->
                         editorLauncher.launch(
                             Intent(this, ActivityEditorActivity::class.java)
-                                .putExtra("activityId", id)
+                                .putExtra("activityId", id)          // Int
+                                .putExtra("startInEdit", startInEdit) // Boolean
                         )
                     },
                     onCreateNew = {
-                        editorLauncher.launch(Intent(this, ActivityEditorActivity::class.java))
+                        editorLauncher.launch(
+                            Intent(this, ActivityEditorActivity::class.java)
+                                .putExtra("startInEdit", true) // Nuevo => abrir en edición
+                        )
                     }
                 )
             }

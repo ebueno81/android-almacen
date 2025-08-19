@@ -5,16 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -27,6 +23,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,9 +34,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.paging.PagingData
-import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.almacen.catalog.domain.model.Article
+import com.example.almacen.catalog.presentation.picker.ArticlePickerDialog
 import com.example.almacen.catalog.presentation.picker.ClientPickerDialog
 import com.example.almacen.catalog.presentation.picker.ReasonDropdown
 import com.example.almacen.catalog.presentation.picker.StoreDropdown
@@ -48,13 +43,20 @@ import com.example.almacen.core.common.validators.isNumeric
 import com.example.almacen.core.ui.components.AppCard
 import com.example.almacen.core.ui.components.AppScaffold
 import com.example.almacen.feature_activity.presentation.viewmodel.ActivityEditorViewModel
-import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun ActivityEditorScreen(
     onBack: () -> Unit,
+    startInEdit: Boolean = false,
+    initialActivityId: Int? = null,
     vm: ActivityEditorViewModel = hiltViewModel()
 ) {
+    // Inicialización 1 sola vez
+    // ✅ Solo inicializa datos
+    LaunchedEffect(Unit) {
+        vm.initIfNeeded(initialActivityId)
+    }
+
     val ui by vm.state.collectAsState()
 
     ui.error?.let { err ->
@@ -74,13 +76,13 @@ fun ActivityEditorScreen(
     var showClientPicker by remember { mutableStateOf(false) }
     var showArticlePickerIndex by remember { mutableStateOf<Int?>(null) }
 
-    val canSubmit =
-        !vm.readOnly &&
-                vm.selectedClient != null &&
-                vm.selectedStore  != null &&
-                vm.selectedReason != null &&
-                vm.detalles.isNotEmpty() &&
-                !ui.isLoading
+//    val canSubmit =
+//        !vm.readOnly &&
+//                vm.selectedClient != null &&
+//                vm.selectedStore  != null &&
+//                vm.selectedReason != null &&
+//                vm.detalles.isNotEmpty() &&
+//                !ui.isLoading
 
     AppScaffold(
         title = when {
@@ -90,16 +92,10 @@ fun ActivityEditorScreen(
         },
         onBack = onBack,
         fab = {
-            if (vm.readOnly) {
+            if (vm.readOnly == false) {
                 ExtendedFloatingActionButton(
                     onClick = { vm.enterEdit() },
                     icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    text = { Text("Editar") }
-                )
-            } else {
-                ExtendedFloatingActionButton(
-                    onClick = { if (canSubmit) vm.save() },
-                    icon = { Icon(Icons.Filled.Check, contentDescription = null) },
                     text = { Text(if (ui.isLoading) "Guardando…" else "Guardar") }
                 )
             }
@@ -127,7 +123,6 @@ fun ActivityEditorScreen(
                 )
             }
 
-            // Almacén
             item {
                 StoreDropdown(
                     stores = vm.stores,
@@ -136,7 +131,6 @@ fun ActivityEditorScreen(
                 )
             }
 
-            // Motivo
             item {
                 ReasonDropdown(
                     reasons = vm.reasons,
@@ -145,7 +139,6 @@ fun ActivityEditorScreen(
                 )
             }
 
-            // Serie y N° Guía en una sola fila
             item {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -156,7 +149,7 @@ fun ActivityEditorScreen(
                         onValueChange = { if (!vm.readOnly) vm.onNroSerieChange(it) },
                         label = { Text("Serie de Guía") },
                         enabled = !vm.readOnly,
-                        modifier = Modifier.weight(0.4f) // cada campo ocupa mitad
+                        modifier = Modifier.weight(0.5f) // cada campo ocupa mitad
                     )
                     OutlinedTextField(
                         value = vm.nroGuia,
@@ -167,12 +160,11 @@ fun ActivityEditorScreen(
                         label = { Text("N° Guía") },
                         enabled = !vm.readOnly,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.weight(0.6f)
+                        modifier = Modifier.weight(0.5f)
                     )
                 }
             }
 
-            // Observaciones
             item {
                 OutlinedTextField(
                     value = vm.observaciones,
@@ -183,7 +175,6 @@ fun ActivityEditorScreen(
                     minLines = 1
                 )
             }
-
 
             item { Divider() }
             item { Text("DETALLES", style = MaterialTheme.typography.titleMedium) }
@@ -284,101 +275,4 @@ fun ActivityEditorScreen(
             }
         )
     }
-}
-
-/* ---------- Diálogo local de artículos ---------- */
-@Composable
-private fun ArticlePickerDialog(
-    onDismiss: () -> Unit,
-    articles: List<Article>,
-    onSelected: (Article) -> Unit
-) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(articles, query) {
-        if (query.isBlank()) articles else articles.filter { it.nombre.contains(query, true) }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {},
-        title = { Text("Seleccionar artículo") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Buscar…") },
-                    singleLine = true,
-                    trailingIcon = { Icon(Icons.Filled.Search, null) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(Modifier.height(4.dp))
-                LazyColumn(modifier = Modifier.height(360.dp)) {
-                    items(filtered) { a ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onSelected(a) }
-                                .padding(vertical = 10.dp, horizontal = 8.dp)
-                        ) {
-                            Text(a.nombre)
-                            Text("ID: ${a.id}")
-                        }
-                        Divider()
-                    }
-                }
-            }
-        }
-    )
-}
-
-@Composable
-fun ArticlePickerDialog(
-    onDismiss: () -> Unit,
-    pagingFlow: Flow<PagingData<Article>>,
-    onQueryChange: (String) -> Unit,
-    onSelected: (Article) -> Unit
-) {
-    val articles = pagingFlow.collectAsLazyPagingItems()
-    var query by remember { mutableStateOf("") } // ✅ guardar el texto
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Seleccionar Artículo") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = {
-                        query = it
-                        onQueryChange(it) // ✅ avisa al VM
-                    },
-                    label = { Text("Buscar artículo...") },
-                    trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                LazyColumn {
-                    items(articles.itemCount) { idx ->
-                        val art = articles[idx]
-                        if (art != null) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onSelected(art)
-                                        onDismiss()
-                                    }
-                                    .padding(8.dp)
-                            ) {
-                                Text(art.nombre)
-                                Text("ID: ${art.id}")
-                            }
-                            Divider()
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {}
-    )
 }

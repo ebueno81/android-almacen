@@ -3,7 +3,6 @@ package com.example.almacen.feature_activity.presentation
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -25,12 +24,24 @@ class ActivityEditorActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val idFromIntent: Int? = extractActivityId()
+        val startInEdit: Boolean = intent?.getBooleanExtra("startInEdit", false) ?: false
+
+        // Inicializa el ViewModel con el ID (si corresponde)
         vm.initIfNeeded(idFromIntent)
+
+        // Aplica el modo edición ANTES de componer (una sola vez)
+        if (startInEdit) {
+            vm.enterEdit()
+        } else {
+            // Si tienes este método, úsalo; si no, omite esta línea y asegura que readOnly sea true por defecto.
+            vm.enterView()
+        }
 
         setContent {
             AlmacenTheme {
                 val state: NewActivityState by vm.state.collectAsState()
 
+                // Cierre al guardar
                 LaunchedEffect(state.savedId) {
                     state.savedId?.let {
                         setResult(Activity.RESULT_OK, Intent().putExtra("savedId", it))
@@ -49,16 +60,10 @@ class ActivityEditorActivity : ComponentActivity() {
 
     private fun extractActivityId(): Int? {
         val extras = intent?.extras ?: return null
-        val any = when {
-            extras.containsKey("activityId") -> extras.get("activityId")
-            else -> null
-        }
+        val any = if (extras.containsKey("activityId")) extras.get("activityId") else null
         val id = when (any) {
             is Int -> any
-            is Long -> if (any <= Int.MAX_VALUE) any.toInt() else {
-                Log.w("ActivityEditorActivity", "activityId(Long) fuera de rango Int: $any")
-                return null
-            }
+            is Long -> any.takeIf { it <= Int.MAX_VALUE }?.toInt()
             is String -> any.toIntOrNull()
             else -> null
         }

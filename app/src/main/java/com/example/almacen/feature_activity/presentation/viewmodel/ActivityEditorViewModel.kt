@@ -125,6 +125,7 @@ class ActivityEditorViewModel @Inject constructor(
 
     fun enterReadOnly() { readOnly = true }
     fun enterEdit() { readOnly = false }
+    fun enterView() { readOnly = true }
 
     fun initIfNeeded(activityIdFromIntent: Int?) {
         if (initialized) return

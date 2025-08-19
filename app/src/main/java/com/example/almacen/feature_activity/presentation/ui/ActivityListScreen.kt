@@ -25,6 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -32,18 +35,22 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.almacen.MainActivity
 import com.example.almacen.core.ui.components.AppCard
 import com.example.almacen.core.ui.components.AppScaffold
+import com.example.almacen.feature_activity.presentation.ui.components.ConfirmDialog
 import com.example.almacen.feature_activity.presentation.viewmodel.ActivityListViewModel
 import com.example.almacen.presentation.ui.component.MainBottomBar
 import com.example.almacen.presentation.ui.component.MainTab
 
 @Composable
 fun ActivityListScreen(
-    onActivityClick: (Long) -> Unit,
+    onOpenEditor: (Int, Boolean) -> Unit,
     onCreateNew: () -> Unit,
     vm: ActivityListViewModel = hiltViewModel()
 ) {
     val state by vm.state.collectAsState()
     val ctx = LocalContext.current
+
+    var showConfirmDialog by remember { mutableStateOf(false) }
+    var activityIdToCancel by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(Unit) { vm.loadActivities() }
 
@@ -88,7 +95,7 @@ fun ActivityListScreen(
                 contentPadding = PaddingValues(bottom = 84.dp) // margen para el bottom bar
             ) {
                 items(state.headers) { act ->
-                    AppCard(onClick = { onActivityClick(act.id.toLong()) }) {
+                    AppCard(onClick = { onOpenEditor(act.id, false) }) {
                         Column(Modifier.padding(16.dp)) {
                             Text("Código: ${act.id}", style = MaterialTheme.typography.titleMedium)
                             Text("Cliente: ${act.clientNombre}")
@@ -103,8 +110,11 @@ fun ActivityListScreen(
                             }
                             Spacer(Modifier.height(8.dp))
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                TextButton(onClick = { onActivityClick(act.id.toLong()) }) { Text("Editar") }
-                                TextButton(onClick = { /* TODO: anular (placeholder) */ }) { Text("Anular") }
+                                TextButton(onClick = { onOpenEditor(act.id, true) }) { Text("Editar") }
+                                TextButton(onClick = {
+                                    activityIdToCancel = act.id.toLong()
+                                    showConfirmDialog = true
+                                }) { Text("Anular") }
                             }
                         }
                     }
@@ -112,4 +122,18 @@ fun ActivityListScreen(
             }
         }
     }
+
+    ConfirmDialog(
+        show = showConfirmDialog,
+        message = "¿Desea anular el registro?",
+        onConfirm = {
+            activityIdToCancel?.let { id ->
+                // Aquí llamas a tu lógica de anulación (ej: vm.cancelActivity(id))
+                println("Anulando actividad $id")
+            }
+            showConfirmDialog = false
+        },
+        onDismiss = { showConfirmDialog = false }
+    )
+
 }
