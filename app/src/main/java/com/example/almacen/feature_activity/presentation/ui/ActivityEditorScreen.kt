@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -52,7 +53,6 @@ fun ActivityEditorScreen(
     vm: ActivityEditorViewModel = hiltViewModel()
 ) {
     // Inicialización 1 sola vez
-    // ✅ Solo inicializa datos
     LaunchedEffect(Unit) {
         vm.initIfNeeded(initialActivityId)
     }
@@ -76,13 +76,13 @@ fun ActivityEditorScreen(
     var showClientPicker by remember { mutableStateOf(false) }
     var showArticlePickerIndex by remember { mutableStateOf<Int?>(null) }
 
-//    val canSubmit =
-//        !vm.readOnly &&
-//                vm.selectedClient != null &&
-//                vm.selectedStore  != null &&
-//                vm.selectedReason != null &&
-//                vm.detalles.isNotEmpty() &&
-//                !ui.isLoading
+    val canSubmit =
+        !vm.readOnly &&
+                vm.selectedClient != null &&
+                vm.selectedStore  != null &&
+                vm.selectedReason != null &&
+                vm.detalles.isNotEmpty() &&
+                !ui.isLoading
 
     AppScaffold(
         title = when {
@@ -92,14 +92,29 @@ fun ActivityEditorScreen(
         },
         onBack = onBack,
         fab = {
-            if (vm.readOnly == false) {
-                ExtendedFloatingActionButton(
-                    onClick = { vm.enterEdit() },
-                    icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                    text = { Text(if (ui.isLoading) "Guardando…" else "Guardar") }
-                )
+            when {
+                vm.readOnly && vm.showEditFab -> {
+                    // FAB "Editar" visible SOLO en modo ver cuando así lo quieras
+                    ExtendedFloatingActionButton(
+                        onClick = { vm.enterEdit() },
+                        icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                        text  = { Text("Editar") }
+                    )
+                }
+                !vm.readOnly -> {
+                    // En edición, mostrar solo "Guardar"
+                    ExtendedFloatingActionButton(
+                        onClick = { if (canSubmit) vm.save() },
+                        icon = { Icon(Icons.Filled.Check, contentDescription = null) },
+                        text  = { Text(if (ui.isLoading) "Guardando…" else "Guardar") }
+                    )
+                }
+                else -> {
+                    // Modo ver y showEditFab = false ⇒ no muestres FAB
+                }
             }
         }
+
     ) { padding ->
         LazyColumn(
             modifier = Modifier

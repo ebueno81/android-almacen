@@ -26,16 +26,13 @@ class ActivityEditorActivity : ComponentActivity() {
         val idFromIntent: Int? = extractActivityId()
         val startInEdit: Boolean = intent?.getBooleanExtra("startInEdit", false) ?: false
 
-        // Inicializa el ViewModel con el ID (si corresponde)
         vm.initIfNeeded(idFromIntent)
 
         // Aplica el modo edición ANTES de componer (una sola vez)
-        if (startInEdit) {
+        if (startInEdit)
             vm.enterEdit()
-        } else {
-            // Si tienes este método, úsalo; si no, omite esta línea y asegura que readOnly sea true por defecto.
-            vm.enterView()
-        }
+         else
+            vm.enterView(showEdit = false)
 
         setContent {
             AlmacenTheme {

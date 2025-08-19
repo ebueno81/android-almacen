@@ -41,6 +41,8 @@ class ActivityEditorViewModel @Inject constructor(
     private val searchClients: SearchClientsUseCase
 ) : ViewModel() {
 
+    var showEditFab by mutableStateOf(true)
+        private set
     // -------- UI STATE (catálogos) --------
     var stores by mutableStateOf<List<Store>>(emptyList()); private set
     var reasons by mutableStateOf<List<Reason>>(emptyList()); private set
@@ -124,8 +126,15 @@ class ActivityEditorViewModel @Inject constructor(
     fun onObservacionesChange(v: String) { observaciones = v }
 
     fun enterReadOnly() { readOnly = true }
-    fun enterEdit() { readOnly = false }
-    fun enterView() { readOnly = true }
+
+    fun enterEdit() {
+        readOnly = false
+        showEditFab = false}
+
+    fun enterView(showEdit: Boolean = true) {
+        readOnly = true
+        showEditFab = showEdit
+    }
 
     fun initIfNeeded(activityIdFromIntent: Int?) {
         if (initialized) return
@@ -158,7 +167,8 @@ class ActivityEditorViewModel @Inject constructor(
                             selectedReason = resolved
                         }
                     }
-                }
+                }else
+                    applyDefaultsForNewIfNeeded()
             } catch (_: Exception) { }
         }
     }
@@ -230,10 +240,20 @@ class ActivityEditorViewModel @Inject constructor(
         }
     }
 
-    fun addDetailRow() {
-        detalles = detalles + NewActivityDetailDraft()
-        detailIds += null
-        dirtyIdx += (detalles.lastIndex)
+    fun addDetailRow(prefillFromLast: Boolean = true) {
+        val newRow = if (prefillFromLast) {
+            // Si hay al menos un detalle, copia el último; si no, uno vacío
+            detalles.lastOrNull()?.copy() ?: NewActivityDetailDraft()
+        } else {
+            NewActivityDetailDraft()
+        }
+
+        // Agrega el nuevo detalle
+        detalles = detalles + newRow
+
+        // Alinea metadatos con la nueva fila
+        detailIds += null           // null => será "create" al guardar
+        dirtyIdx += detalles.lastIndex  // opcional; no afecta el flujo de "create"
     }
 
     fun updateDetailRow(index: Int, newValue: NewActivityDetailDraft) {
@@ -413,4 +433,15 @@ class ActivityEditorViewModel @Inject constructor(
     fun consumeSavedEvent() {
         _state.value = _state.value.copy(savedId = null)
     }
+
+    private fun applyDefaultsForNewIfNeeded() {
+        if (activityId != null) return
+
+        if (selectedStore == null)
+            selectedStore = stores.firstOrNull { it.id == "01" } ?: stores.firstOrNull()
+
+        if (selectedReason == null)
+            selectedReason = reasons.firstOrNull { it.id == "01" } ?: reasons.firstOrNull()
+    }
+
 }
