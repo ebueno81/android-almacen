@@ -19,7 +19,7 @@ fun MainBottomBar(
     onActividad: () -> Unit,
     onClientes: () -> Unit,
     onAlmacen: () -> Unit,
-    onUsuario: () -> Unit
+    onMotivos: () -> Unit
 ) {
     NavigationBar {
         NavigationBarItem(
@@ -47,10 +47,10 @@ fun MainBottomBar(
             label = { Text("Almacén") }
         )
         NavigationBarItem(
-            selected = current == MainTab.Usuario,
-            onClick = onUsuario,
-            icon = { Icon(Icons.Default.Person, contentDescription = "Usuario") },
-            label = { Text("Usuario") }
+            selected = current == MainTab.Motivos,
+            onClick = onMotivos,
+            icon = { Icon(Icons.Default.Person, contentDescription = "Motivos") },
+            label = { Text("Motivos") }
         )
     }
 }

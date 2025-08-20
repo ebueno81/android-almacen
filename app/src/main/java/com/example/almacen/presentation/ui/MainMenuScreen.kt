@@ -37,7 +37,7 @@ fun MainMenuScreen(
     onActividad: () -> Unit,
     onClientes: () -> Unit,
     onAlmacen: () -> Unit,
-    onUsuario: () -> Unit,
+    onMotivos: () -> Unit,
     onArticulos: () -> Unit
 ) {
     val context = LocalContext.current
@@ -59,7 +59,7 @@ fun MainMenuScreen(
                 },
                 onClientes = onClientes,
                 onAlmacen = onAlmacen,
-                onUsuario = onUsuario
+                onMotivos = onMotivos
             )
         }
 
@@ -86,16 +86,16 @@ fun MainMenuScreen(
                     },
                     QuickItem("Clientes",  Icons.Filled.Groups,     onClientes),
                     QuickItem("Almacén",   Icons.Filled.Store,      onAlmacen),
-                    QuickItem("Usuario",   Icons.Filled.Person,     onUsuario),
+                    QuickItem("Motivos",   Icons.Filled.Person,     onMotivos),
                     QuickItem("Artículos", Icons.Filled.Inventory,  onArticulos),
                 )
             )
 
             Spacer(Modifier.height(24.dp))
 
-            SectionTitle("Servicios")
+            SectionTitle("Actividades")
             repeat(10) { i ->
-                ListItem(headlineContent = { Text("Item $i") })
+                ListItem(headlineContent = { Text("Actividad N°: $i") })
                 Divider()
             }
             Spacer(Modifier.height(16.dp))

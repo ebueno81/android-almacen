@@ -441,7 +441,7 @@ class ActivityEditorViewModel @Inject constructor(
             selectedStore = stores.firstOrNull { it.id == "01" } ?: stores.firstOrNull()
 
         if (selectedReason == null)
-            selectedReason = reasons.firstOrNull { it.id == "01" } ?: reasons.firstOrNull()
+            selectedReason = reasons.firstOrNull { it.id == "18" } ?: reasons.firstOrNull()
     }
 
 }

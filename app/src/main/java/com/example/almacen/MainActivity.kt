@@ -7,6 +7,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.almacen.catalog.presentation.ArticleListActivity
+import com.example.almacen.catalog.presentation.ClientListActivity
+import com.example.almacen.catalog.presentation.ReasonListActivity
+import com.example.almacen.catalog.presentation.StoreListActivity
 import com.example.almacen.core.datastore.TokenStore
 import com.example.almacen.core.ui.theme.AlmacenTheme
 import com.example.almacen.feature_activity.presentation.ActivityListActivity
@@ -29,10 +33,17 @@ class MainActivity : ComponentActivity() {
                     onActividad = {
                         startActivity(Intent(this, ActivityListActivity::class.java))
                     },
-                    onClientes   = { /* TODO: navegar a feature_client */ },
-                    onAlmacen    = { /* TODO: navegar a feature_store */ },
-                    onUsuario    = { /* TODO: navegar a perfil/usuario */ },
-                    onArticulos  = { /* TODO: navegar a feature_article */ }
+                    onClientes   = {
+                        startActivity(Intent(this, ClientListActivity::class.java)) },
+                    onAlmacen    = {
+                        startActivity(Intent(this, StoreListActivity::class.java))
+                    },
+                    onMotivos    = {
+                        startActivity(Intent(this, ReasonListActivity::class.java))
+                    },
+                    onArticulos  = {
+                        startActivity(Intent(this, ArticleListActivity::class.java))
+                    }
                 )
             }
         }

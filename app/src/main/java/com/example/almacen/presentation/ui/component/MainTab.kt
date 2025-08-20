@@ -13,5 +13,5 @@ enum class MainTab(val label: String, val icon: ImageVector) {
     Actividad("Actividad", Icons.Filled.Assignment),
     Clientes("Clientes", Icons.Filled.Groups),
     Almacen("Almacén", Icons.Filled.Store),
-    Usuario("Usuario", Icons.Filled.Person)
+    Motivos("Motivos", Icons.Filled.Person)
 }

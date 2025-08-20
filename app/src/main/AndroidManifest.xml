@@ -37,6 +37,10 @@
         <activity
             android:name=".feature_activity.presentation.ActivityEditorActivity"
             android:exported="false" />
+        <activity android:name=".catalog.presentation.ClientListActivity" />
+        <activity android:name=".catalog.presentation.StoreListActivity" />
+        <activity android:name=".catalog.presentation.ReasonListActivity" />
+        <activity android:name=".catalog.presentation.ArticleListActivity" />
     </application>
 
 </manifest>

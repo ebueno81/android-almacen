@@ -1,5 +1,6 @@
 package com.example.almacen.feature_activity.presentation.ui
 
+import android.app.Activity
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ fun ActivityListScreen(
 ) {
     val state by vm.state.collectAsState()
     val ctx = LocalContext.current
+    val activity = ctx as? Activity
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var activityIdToCancel by remember { mutableStateOf<Long?>(null) }
@@ -56,6 +58,7 @@ fun ActivityListScreen(
 
     AppScaffold(
         title = "Actividades",
+        onBack = { activity?.finish() },
         fab = {
             FloatingActionButton(onClick = onCreateNew) {
                 Icon(Icons.Default.Add, contentDescription = "Nuevo")
@@ -64,11 +67,18 @@ fun ActivityListScreen(
         bottomBar = {
             MainBottomBar(
                 current = MainTab.Actividad,
-                onHome = { ctx.startActivity(Intent(ctx, MainActivity::class.java)) },
+                onHome = {
+                    // (opcional) si quieres forzar volver al Main y limpiar la pila:
+                    ctx.startActivity(
+                        Intent(ctx, MainActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    )
+                    activity?.finish()
+                },
                 onActividad = { /* ya estás aquí */ },
                 onClientes = { /* TODO */ },
                 onAlmacen = { /* TODO */ },
-                onUsuario = { /* TODO */ }
+                onMotivos = { /* TODO */ }
             )
         }
     ) { padding ->
@@ -92,7 +102,7 @@ fun ActivityListScreen(
                     .padding(padding)
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(bottom = 84.dp) // margen para el bottom bar
+                contentPadding = PaddingValues(bottom = 84.dp)
             ) {
                 items(state.headers) { act ->
                     AppCard(onClick = { onOpenEditor(act.id, false) }) {
@@ -128,12 +138,11 @@ fun ActivityListScreen(
         message = "¿Desea anular el registro?",
         onConfirm = {
             activityIdToCancel?.let { id ->
-                // Aquí llamas a tu lógica de anulación (ej: vm.cancelActivity(id))
+                // vm.cancelActivity(id) si ya lo tienes
                 println("Anulando actividad $id")
             }
             showConfirmDialog = false
         },
         onDismiss = { showConfirmDialog = false }
     )
-
 }

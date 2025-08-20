@@ -1,7 +1,9 @@
 package com.example.almacen.feature_activity.presentation.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -48,7 +50,7 @@ import com.example.almacen.feature_activity.presentation.viewmodel.ActivityEdito
 @Composable
 fun ActivityEditorScreen(
     onBack: () -> Unit,
-    startInEdit: Boolean = false,
+    //startInEdit: Boolean = false,
     initialActivityId: Int? = null,
     vm: ActivityEditorViewModel = hiltViewModel()
 ) {
@@ -109,9 +111,6 @@ fun ActivityEditorScreen(
                         text  = { Text(if (ui.isLoading) "Guardando…" else "Guardar") }
                     )
                 }
-                else -> {
-                    // Modo ver y showEditFab = false ⇒ no muestres FAB
-                }
             }
         }
 
@@ -124,25 +123,39 @@ fun ActivityEditorScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            // Cliente (readonly + clic para abrir picker)
             item {
-                OutlinedTextField(
-                    value = vm.selectedClient?.nombre ?: "",
-                    onValueChange = {},
-                    label = { Text("Cliente") },
-                    enabled = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !vm.readOnly) { showClientPicker = true },
-                    trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) }
-                )
+                Box(Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = vm.selectedClient?.nombre ?: "",
+                        onValueChange = {},
+                        label = { Text("Cliente") },
+                        readOnly = true,
+                        enabled = !vm.readOnly,
+                        trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Capa transparente que capta el click
+                    if (!vm.readOnly) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable(
+                                    enabled = true,
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { showClientPicker = true }
+                        )
+                    }
+                }
             }
 
             item {
                 StoreDropdown(
                     stores = vm.stores,
                     selected = vm.selectedStore,
-                    onSelected = { if (!vm.readOnly) vm.selectStore(it) }
+                    onSelected = { if (!vm.readOnly) vm.selectStore(it)},
+                    enabled = !vm.readOnly
                 )
             }
 
@@ -150,7 +163,8 @@ fun ActivityEditorScreen(
                 ReasonDropdown(
                     reasons = vm.reasons,
                     selected = vm.selectedReason,
-                    onSelected = { if (!vm.readOnly) vm.selectReason(it) }
+                    onSelected = { if (!vm.readOnly) vm.selectReason(it) },
+                    enabled = !vm.readOnly
                 )
             }
 
@@ -202,16 +216,33 @@ fun ActivityEditorScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedTextField(
-                            value = row.articulo?.nombre ?: "",
-                            onValueChange = {},
-                            label = { Text("Artículo") },
-                            enabled = false,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(enabled = !vm.readOnly) { showArticlePickerIndex = idx },
-                            trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) }
-                        )
+                        // Dentro de cada fila de detalle:
+                        Box(Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = row.articulo?.nombre ?: "",
+                                onValueChange = {},                          // no editable manual
+                                label = { Text("Artículo") },
+                                readOnly = true,                             // se ve activo sin teclado
+                                enabled = !vm.readOnly,                      // colores: activo en editar/nuevo, gris en ver
+                                trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Capa transparente que capta el click (solo en modo edición/nuevo)
+                            if (!vm.readOnly) {
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable(
+                                            enabled = true,
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            showArticlePickerIndex = idx
+                                        }
+                                )
+                            }
+                        }
 
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
