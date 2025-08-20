@@ -135,13 +135,18 @@ class ActivityRepositoryImpl @Inject constructor(
         api.updateDetail(detailId, body).toDomain()
     }
 
-    override suspend fun listHeaders(): Result<List<ActivityHeader>> = runCatching {
-        api.getActivitiesHeaders()
-            .content   // 👈 asegúrate de que este sea el campo correcto en tu DTO
-            .map { dto -> dto.toDomain() }
+    override suspend fun listHeaders(
+        page: Int,
+        size: Int,
+        nombreCliente: String?
+    ): Result<List<ActivityHeader>> = runCatching {
+        val resp = api.getActivitiesHeaders(
+            page = page,
+            size = size,
+            nombreCliente = nombreCliente // 👈 mapea al nombre real del backend
+        )
+        resp.content.map { it.toDomain() } // convierte tu DTO a modelo domain
     }
-
-
 
     // ====== (Opcional) Backward compatibility ======
     // Si en tu ViewModel todavía llamas a get(Long) o create con userId, déjalos como “puentes”:

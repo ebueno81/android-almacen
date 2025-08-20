@@ -48,7 +48,8 @@ interface ActivityApi {
     @GET("api/activity/headers")
     suspend fun getActivitiesHeaders(
         @Query("page") page: Int = 0,
-        @Query("size") size: Int = 10
+        @Query("size") size: Int = 10,
+        @Query("nombreCliente") nombreCliente: String? = null
     ): PageResponse<ActivityHeaderDto>
 
 }

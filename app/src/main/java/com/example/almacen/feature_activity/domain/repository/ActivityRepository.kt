@@ -49,7 +49,11 @@ interface ActivityRepository {
         cajas: Int
     ): Result<ActivityDetail>
 
-    suspend fun listHeaders(): Result<List<ActivityHeader>>
+    suspend fun listHeaders(
+        page: Int = 0,
+        size: Int = 20,
+        nombreCliente: String? = null
+    ): Result<List<ActivityHeader>>
 
 }
 
