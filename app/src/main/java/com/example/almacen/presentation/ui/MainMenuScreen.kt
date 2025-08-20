@@ -61,7 +61,7 @@ fun MainMenuScreen(
                 },
                 onClientes = onClientes,
                 onAlmacen = onAlmacen,
-                onMotivos = onMotivos
+                onArticulos = onArticulos
             )
         }
 

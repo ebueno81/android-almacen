@@ -28,63 +28,50 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.almacen.catalog.domain.model.Article
 import com.example.almacen.catalog.presentation.screen.components.ArticleItem
 import com.example.almacen.catalog.presentation.viewmodel.ArticleListViewModel
-import com.example.almacen.core.ui.components.AppScaffold
 
 @Composable
 fun ArticleListScreen(
-    onBack: () -> Unit,
-    vm: ArticleListViewModel  = hiltViewModel()
+    modifier: Modifier = Modifier,
+    vm: ArticleListViewModel = hiltViewModel()
 ) {
     val lazyItems = vm.pagingFlow.collectAsLazyPagingItems()
     var query by remember { mutableStateOf("") }
 
-    AppScaffold(
-        title = "Articulos",
-        onBack = onBack
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(12.dp)
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it; vm.onQueryChange(it) },
-                singleLine = true,
-                label = { Text("Buscar artículo (mín. 3 letras)") },
-                trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(8.dp))
+    Column(
+        modifier
+            .fillMaxSize()
+            .padding(12.dp)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it; vm.onQueryChange(it) },
+            singleLine = true,
+            label = { Text("Buscar artículo (mín. 3 letras)") },
+            trailingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            when (val st = lazyItems.loadState.refresh) {
-                is LoadState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
-                is LoadState.Error   -> Text("Error: ${st.error.message}")
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        // Opción por índice (no necesita import de paging items)
-                        items(count = lazyItems.itemCount) { index ->
-                            val c: Article? = lazyItems[index]
-                            if (c != null) {
-                                ArticleItem(article = c) // ocupa todo el ancho con fondo claro
-                            }
-                        }
+        Spacer(Modifier.height(8.dp))
 
-                        // Footer de append (paginación)
-                        when (val ap = lazyItems.loadState.append) {
-                            is LoadState.Loading -> item {
-                                Text("Cargando más…", Modifier.padding(12.dp))
-                            }
-                            is LoadState.Error -> item {
-                                Text("Error al cargar más: ${ap.error.message}")
-                            }
-                            else -> Unit
+        when (val st = lazyItems.loadState.refresh) {
+            is LoadState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
+            is LoadState.Error   -> Text("Error: ${st.error.message}")
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(lazyItems.itemCount) { index ->
+                        val art: Article? = lazyItems[index]
+                        if (art != null) {
+                            ArticleItem(article = art)
                         }
+                    }
+                    when (val ap = lazyItems.loadState.append) {
+                        is LoadState.Loading -> item { Text("Cargando más…", Modifier.padding(12.dp)) }
+                        is LoadState.Error   -> item { Text("Error al cargar más: ${ap.error.message}") }
+                        else -> Unit
                     }
                 }
             }
