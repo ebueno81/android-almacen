@@ -1,13 +1,32 @@
 package com.example.almacen.presentation.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -18,32 +37,71 @@ import androidx.compose.ui.unit.dp
 fun MainHeader(
     title: String,
     subtitle: String,
-    onNotifications: () -> Unit
+    onNotifications: () -> Unit = {},
+    onLogout: () -> Unit = {}            // <-- NUEVO
 ) {
     val cs = MaterialTheme.colorScheme
+    var showMenu by remember { mutableStateOf(false) }  // <-- NUEVO
+
     Box(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(cs.secondary, cs.primary)))
-            .padding(horizontal = 16.dp, vertical = 20.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(cs.primary, cs.primary.copy(alpha = 0.85f))
+                )
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Row(
-            Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(shape = CircleShape, color = cs.surface, tonalElevation = 6.dp) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = cs.primary, modifier = Modifier.padding(8.dp))
+                Surface(
+                    color = Color.White.copy(alpha = 0.15f),
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = cs.primary,
+                        modifier = Modifier.padding(8.dp)
+                    )
                 }
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(title, color = Color.White, style = MaterialTheme.typography.titleMedium)
-                    Text(subtitle, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        subtitle,
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
-            IconButton(onClick = onNotifications) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = Color.White)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onNotifications) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Notificaciones", tint = Color.White)
+                }
+
+                // Menú overflow (⋮)
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Más", tint = Color.White)
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Cerrar sesión") },
+                            leadingIcon = { Icon(Icons.Default.Logout, contentDescription = null) },
+                            onClick = {
+                                showMenu = false
+                                onLogout()                 // <-- dispara logout
+                            }
+                        )
+                    }
+                }
             }
         }
     }

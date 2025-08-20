@@ -38,7 +38,8 @@ fun MainMenuScreen(
     onClientes: () -> Unit,
     onAlmacen: () -> Unit,
     onMotivos: () -> Unit,
-    onArticulos: () -> Unit
+    onArticulos: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -47,7 +48,8 @@ fun MainMenuScreen(
             MainHeader(
                 title = "Hola, $displayName",
                 subtitle = "Bienvenido",
-                onNotifications = { /* TODO */ }
+                onNotifications = { /* TODO */ },
+                onLogout = onLogout
             )
         },
         bottomBar = {
