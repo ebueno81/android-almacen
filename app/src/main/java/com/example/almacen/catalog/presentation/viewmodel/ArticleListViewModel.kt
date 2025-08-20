@@ -30,7 +30,7 @@ class ArticleListViewModel @Inject constructor(
             .map { it?.trim() }
             .debounce(300)
             .flatMapLatest { q ->
-                val effective = q ?: ""   // "" = primera página
+                val effective = q ?: ""
                 getArticles(effective).flow
             }
             .cachedIn(viewModelScope)

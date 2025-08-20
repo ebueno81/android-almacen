@@ -25,19 +25,15 @@ class ClientListViewModel @Inject constructor(
     var query by mutableStateOf<String?>(null)
         private set
 
-    // Carga inicial: si query es null/"" → pide primera página
     val pagingFlow: Flow<PagingData<Client>> =
         snapshotFlow { query }
             .map { it?.trim() }
             .debounce(300)
             .flatMapLatest { q ->
-                // ✅ AQUÍ el cambio clave
-                if (q.isNullOrBlank()) {
-                    // Si tu use case acepta null: searchClients(null).flow
+                if (q.isNullOrBlank())
                     searchClients("").flow
-                } else {
+                 else
                     searchClients(q).flow
-                }
             }
             .cachedIn(viewModelScope)
 

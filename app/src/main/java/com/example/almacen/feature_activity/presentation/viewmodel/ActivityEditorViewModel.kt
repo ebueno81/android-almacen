@@ -81,7 +81,7 @@ class ActivityEditorViewModel @Inject constructor(
     private var originalReasonName: String? = null
 
     // -------- ARTICULOS (Paginh) ------ //
-    var articles by mutableStateOf<List<Article>>(emptyList()); private set
+ //   var articles by mutableStateOf<List<Article>>(emptyList()); private set
 
     var articleQuery by mutableStateOf<String?>(null)
     val articlePagingFlow: Flow<PagingData<Article>> =
@@ -89,16 +89,15 @@ class ActivityEditorViewModel @Inject constructor(
             .map { it?.trim() }
             .debounce(300) // puedes bajar de 3000ms a 300ms para que se sienta más rápido
             .flatMapLatest { q ->
-                if (q.isNullOrBlank() || q.length < 3) {
+                if (q.isNullOrBlank() || q.length < 3)
                     flowOf(PagingData.empty())
-                } else {
+                else
                     getArticles(q).flow  // ✅ igual que searchClients
-                }
             }
             .cachedIn(viewModelScope)
 
     fun onArticleQueryChange(q: String?) { articleQuery = q }
-    fun selectArticle(a: Article) { selectedArticle = a }
+   // fun selectArticle(a: Article) { selectedArticle = a }
 
     // -------- CLIENTES (Paging) --------
     private var clientQuery by mutableStateOf<String?>(null)
@@ -107,12 +106,10 @@ class ActivityEditorViewModel @Inject constructor(
             .map { it?.trim() }          // normaliza espacios
             .debounce(3000)              // 3 segundos de pausa
             .flatMapLatest { q ->
-                // Solo buscar si hay 3+ caracteres; si no, lista vacía
-                if (q.isNullOrBlank() || q.length < 3) {
+                if (q.isNullOrBlank() || q.length < 3)
                     flowOf(PagingData.empty())
-                } else {
+                else
                     searchClients(q).flow
-                }
             }
             .cachedIn(viewModelScope)
 
@@ -139,7 +136,6 @@ class ActivityEditorViewModel @Inject constructor(
     fun initIfNeeded(activityIdFromIntent: Int?) {
         if (initialized) return
         initialized = true
-        Log.d("ActivityVM", "initIfNeeded vm=${this.hashCode()} id=$activityIdFromIntent")
 
         loadStaticLists()
 

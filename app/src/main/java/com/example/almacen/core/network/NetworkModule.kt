@@ -25,7 +25,7 @@ object NetworkModule {
             .writeTimeout(120, java.util.concurrent.TimeUnit.SECONDS)   // Tiempo para enviar el cuerpo
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
-                    level = HttpLoggingInterceptor.Level.BODY
+                    level = HttpLoggingInterceptor.Level.NONE
                 }
             )
             .build()

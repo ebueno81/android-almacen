@@ -149,7 +149,7 @@ fun ActivityListScreen(
                                                     showConfirmDialog = true
                                                 }
                                             ) {
-                                                Text("Anular")
+                                                Text("Almacen")
                                             }
                                         }
                                     }
@@ -177,12 +177,12 @@ fun ActivityListScreen(
     // 🔸 ConfirmDialog conectado
     ConfirmDialog(
         show = showConfirmDialog,
-        message = "¿Desea anular el registro?",
+        message = "¿Deseas realizar el ingreso almacen?",
         onConfirm = {
             activityIdToCancel?.let { id ->
                 // TODO: llama a tu VM si tienes lógica de anulación:
                 // vm.cancelActivity(id)
-                println("Anulando actividad $id")
+                //println("Anulando actividad $id")
             }
             showConfirmDialog = false
             activityIdToCancel = null
