@@ -103,7 +103,7 @@ fun LoginScreen(
                     .padding(top = 72.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LoginAvatar()
+                LoginLogo()
                 Spacer(Modifier.height(16.dp))
                 Text(
                     text = "Iniciar sesión",
