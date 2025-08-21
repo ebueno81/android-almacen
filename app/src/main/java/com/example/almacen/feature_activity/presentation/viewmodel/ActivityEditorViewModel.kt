@@ -49,7 +49,7 @@ class ActivityEditorViewModel @Inject constructor(
     //var articles by mutableStateOf<List<Article>>(emptyList()); private set
 
     // -------- Cabecera seleccionada --------
-    var selectedArticle by mutableStateOf<Article?>(null); private set
+   // var selectedArticle by mutableStateOf<Article?>(null); private set
     var selectedClient by mutableStateOf<Client?>(null); private set
     var selectedStore by mutableStateOf<Store?>(null); private set
     var selectedReason by mutableStateOf<Reason?>(null); private set

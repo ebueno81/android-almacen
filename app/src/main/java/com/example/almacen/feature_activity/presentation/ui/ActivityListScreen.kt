@@ -92,10 +92,12 @@ fun ActivityListScreen(
                                     Spacer(Modifier.height(8.dp))
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         TextButton(onClick = { onOpenEditor(act.id, true) }) { Text("Editar") }
-                                        TextButton(onClick = {
-                                            selectedId = act.id
-                                            showConfirmDialog = true
-                                        }) { Text("Almacén") }
+                                        if (act.estado==0){
+                                            TextButton(onClick = {
+                                                selectedId = act.id
+                                                showConfirmDialog = true
+                                            }) { Text("Almacén") }
+                                        }
                                     }
                                 }
                             }
@@ -104,6 +106,7 @@ fun ActivityListScreen(
 
                     when (val ap = lazyItems.loadState.append) {
                         is LoadState.Loading -> item { Text("Cargando más…", Modifier.padding(12.dp)) }
+
                         is LoadState.Error   -> item { Text("Error al cargar más: ${ap.error.message}") }
                         else -> Unit
                     }

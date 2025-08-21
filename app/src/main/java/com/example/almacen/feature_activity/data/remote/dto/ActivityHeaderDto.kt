@@ -14,5 +14,6 @@ data class ActivityHeaderDto(
     val usuarioCreacion: String?,
     val usuarioModifica: String?,
     val fechaCreacion: String,
-    val totalPeso: Double
+    val totalPeso: Double,
+    val estado: Int
 )

@@ -9,5 +9,6 @@ data class ActivityHeader(
     val storeNombre: String?,
     val reasonNombre: String?,
     val fechaCreacion: String,
-    val totalPeso: Double
+    val totalPeso: Double,
+    val estado: Int
 )

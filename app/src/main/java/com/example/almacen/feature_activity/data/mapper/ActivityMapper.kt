@@ -42,5 +42,6 @@ fun ActivityHeaderDto.toDomain() = ActivityHeader(
     storeNombre = storeNombre,
     reasonNombre = reasonNombre,
     fechaCreacion = fechaCreacion,
-    totalPeso = totalPeso
+    totalPeso = totalPeso,
+    estado = estado
 )
