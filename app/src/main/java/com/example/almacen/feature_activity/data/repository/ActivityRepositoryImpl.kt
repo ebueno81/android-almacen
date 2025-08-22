@@ -44,8 +44,8 @@ class ActivityRepositoryImpl @Inject constructor(
     ): Result<Activity> = runCatching {
         val userCode = sanitizeUser10(rememberSession.userCodeFlow.first())
         val body = ActivityRequest(
-            nroSerie = nroSerie,
-            nroGuia = nroGuia,
+            nroSerie = nroSerie.uppercase(),
+            nroGuia = nroGuia.uppercase(),
             observacion = observacion,
             idCliente = clientId,
             idAlmacen = storeId,
@@ -76,8 +76,8 @@ class ActivityRepositoryImpl @Inject constructor(
     ): Result<Activity> = runCatching {
         val userCode = sanitizeUser10(rememberSession.userCodeFlow.first())
         val body = UpdateActivityHeaderRequest(
-            nroSerie = nroSerie,
-            nroGuia = nroGuia,
+            nroSerie = nroSerie.uppercase(),
+            nroGuia = nroGuia.uppercase(),
             observacion = observacion,
             idCliente = clientId,
             idAlmacen = storeId,
@@ -107,7 +107,7 @@ class ActivityRepositoryImpl @Inject constructor(
                 UpsertActivityDetailsRequest.DetailToUpdate(
                     id = idDetalle,
                     idArticulo = idArticulo,
-                    nroLote = d.lote,
+                    nroLote = d.lote.uppercase(),
                     peso = d.peso,
                     cajas = d.cajas
                 )
@@ -127,7 +127,7 @@ class ActivityRepositoryImpl @Inject constructor(
     ): Result<ActivityDetail> = runCatching {
         val body = ActivityDetailRequest(
             idArticulo = articuloId,
-            nroLote = lote,
+            nroLote = lote.uppercase(),
             peso = peso,
             cajas = cajas
         )
