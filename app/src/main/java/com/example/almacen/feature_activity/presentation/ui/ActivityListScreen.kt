@@ -26,24 +26,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.almacen.core.ui.components.AppCard
 import com.example.almacen.feature_activity.domain.model.ActivityHeader
 import com.example.almacen.feature_activity.presentation.ui.components.ConfirmDialog
 import com.example.almacen.feature_activity.presentation.viewmodel.ActivityListViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun ActivityListScreen(
     modifier: Modifier = Modifier,
     onOpenEditor: (Int, Boolean) -> Unit,
     onCreateNew: () -> Unit,
-    onAlmacenConfirm: (Int) -> Unit,   // requerido
-    vm: ActivityListViewModel = hiltViewModel()
-){
+    onAlmacenConfirm: (Int) -> Unit,
+    vm: ActivityListViewModel
+) {
     val lazyItems = vm.pagingFlow.collectAsLazyPagingItems()
-    LaunchedEffect(Unit) { vm.loadInitial() }
+
+    // 1) Carga inicial
+    LaunchedEffect(Unit) {
+        vm.loadInitial()
+    }
+
+    // 2) Escucha eventos (SSE -> refreshFlow) y refresca la lista
+    LaunchedEffect(Unit) {
+        vm.refreshFlow.collectLatest {
+            lazyItems.refresh()
+        }
+    }
 
     var showConfirmDialog by remember { mutableStateOf(false) }
     var selectedId by remember { mutableStateOf<Int?>(null) }
@@ -81,7 +92,7 @@ fun ActivityListScreen(
                                     Text("Código: ${act.id}", style = MaterialTheme.typography.titleMedium)
                                     Text("Cliente: ${act.clientNombre}")
                                     Text("Fecha: ${act.fechaCreacion ?: "-"}")
-                                    Spacer(Modifier.height(8.dp))
+                                 //   Spacer(Modifier.height(8.dp))
                                     Row(
                                         Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
@@ -91,8 +102,8 @@ fun ActivityListScreen(
                                     }
                                     Spacer(Modifier.height(8.dp))
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                        TextButton(onClick = { onOpenEditor(act.id, true) }) { Text("Editar") }
-                                        if (act.estado==0){
+                                        if (act.estado == 0) {
+                                            TextButton(onClick = { onOpenEditor(act.id, true) }) { Text("Editar") }
                                             TextButton(onClick = {
                                                 selectedId = act.id
                                                 showConfirmDialog = true
@@ -106,7 +117,6 @@ fun ActivityListScreen(
 
                     when (val ap = lazyItems.loadState.append) {
                         is LoadState.Loading -> item { Text("Cargando más…", Modifier.padding(12.dp)) }
-
                         is LoadState.Error   -> item { Text("Error al cargar más: ${ap.error.message}") }
                         else -> Unit
                     }
@@ -120,7 +130,7 @@ fun ActivityListScreen(
             show = showConfirmDialog,
             message = "¿Deseas realizar el ingreso almacén?",
             onConfirm = {
-                selectedId?.let(onAlmacenConfirm)   // 👈 LLAMADA RESTAURADA
+                selectedId?.let(onAlmacenConfirm)
                 showConfirmDialog = false
                 selectedId = null
             },

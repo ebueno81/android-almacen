@@ -55,6 +55,7 @@ interface ActivityRepository {
         nombreCliente: String? = null
     ): Result<List<ActivityHeader>>
 
+    suspend fun processActivity(id: Int, user: String = "android"): Result<Int>
 }
 
 data class ActivityFormDetail(

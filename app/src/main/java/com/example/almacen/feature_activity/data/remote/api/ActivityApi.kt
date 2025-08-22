@@ -6,6 +6,7 @@ import com.example.almacen.feature_activity.data.remote.dto.ActivityDetailReques
 import com.example.almacen.feature_activity.data.remote.dto.ActivityDto
 import com.example.almacen.feature_activity.data.remote.dto.ActivityHeaderDto
 import com.example.almacen.feature_activity.data.remote.dto.ActivityRequest
+import com.example.almacen.feature_activity.data.remote.dto.ProcessActivityResponseDto
 import com.example.almacen.feature_activity.data.remote.dto.UpdateActivityHeaderRequest
 import com.example.almacen.feature_activity.data.remote.dto.UpsertActivityDetailsRequest
 import retrofit2.http.Body
@@ -52,4 +53,9 @@ interface ActivityApi {
         @Query("nombreCliente") nombreCliente: String? = null
     ): PageResponse<ActivityHeaderDto>
 
+    @POST("activities/{id}/process")
+    suspend fun processActivity(
+        @Path("id") id: Int,
+        @Query("user") user: String? = null
+    ): ProcessActivityResponseDto
 }

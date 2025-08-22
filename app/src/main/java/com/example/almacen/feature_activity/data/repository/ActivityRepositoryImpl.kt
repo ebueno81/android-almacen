@@ -148,6 +148,11 @@ class ActivityRepositoryImpl @Inject constructor(
         resp.content.map { it.toDomain() } // convierte tu DTO a modelo domain
     }
 
+    override suspend fun processActivity(id: Int, user: String): Result<Int> = runCatching {
+        val resp = api.processActivity(id, user)
+        resp.idIngresoCreado
+    }
+
     // ====== (Opcional) Backward compatibility ======
     // Si en tu ViewModel todavía llamas a get(Long) o create con userId, déjalos como “puentes”:
     @Deprecated("Usar get(Int)")

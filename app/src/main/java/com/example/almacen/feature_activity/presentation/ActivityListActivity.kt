@@ -1,4 +1,3 @@
-// com.example.almacen.feature_activity.presentation/ActivityListActivity.kt
 package com.example.almacen.feature_activity.presentation
 
 import android.app.Activity
@@ -13,13 +12,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.almacen.catalog.presentation.ArticleListActivity
 import com.example.almacen.catalog.presentation.ClientListActivity
 import com.example.almacen.catalog.presentation.StoreListActivity
+import com.example.almacen.core.network.NetworkModule // BASE_URL
 import com.example.almacen.core.ui.components.AppScaffold
 import com.example.almacen.core.ui.theme.AlmacenTheme
 import com.example.almacen.feature_activity.presentation.ui.ActivityListScreen
+import com.example.almacen.feature_activity.presentation.viewmodel.ActivityListViewModel
 import com.example.almacen.presentation.ui.component.MainBottomBar
 import com.example.almacen.presentation.ui.component.MainTab
 import com.example.almacen.util.goHome
@@ -40,6 +43,13 @@ class ActivityListActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AlmacenTheme {
+                val vm: ActivityListViewModel = hiltViewModel()
+
+                // 🔌 Suscripción SSE (una vez por pantalla)
+                LaunchedEffect(Unit) {
+                    vm.startSse(NetworkModule.BASE_URL) // ej. http://10.0.2.2:8080/
+                }
+
                 AppScaffold(
                     title = "Actividades",
                     onBack = { finish() },
@@ -81,11 +91,26 @@ class ActivityListActivity : ComponentActivity() {
                                     .putExtra("startInEdit", true)
                             )
                         },
-                        onAlmacenConfirm = { id ->           // 👈 AHORA SÍ lo pasamos
-                            // TODO: tu acción real. Ejemplos:
-                            // startActivity(Intent(this, AlmacenIngresoActivity::class.java).putExtra("activityId", id))
-                            Toast.makeText(this, "Ingreso a almacén $id", Toast.LENGTH_SHORT).show()
-                        }
+                        onAlmacenConfirm = { id ->
+                            vm.processActivity(
+                                id = id,
+                                onSuccess = { nuevoId ->
+                                    Toast.makeText(
+                                        this,
+                                        "Ingreso generado (id=$nuevoId)",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                onError = { msg ->
+                                    Toast.makeText(
+                                        this,
+                                        "Error al procesar: $msg",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            )
+                        },
+                        vm = vm   // 👈👈👈 PASA EL VIEWMODEL AQUÍ
                     )
                 }
             }
