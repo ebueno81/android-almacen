@@ -53,7 +53,7 @@ interface ActivityApi {
         @Query("nombreCliente") nombreCliente: String? = null
     ): PageResponse<ActivityHeaderDto>
 
-    @POST("activities/{id}/process")
+    @POST("api/activity/{id}/process")
     suspend fun processActivity(
         @Path("id") id: Int,
         @Query("user") user: String? = null

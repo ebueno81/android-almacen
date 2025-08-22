@@ -46,14 +46,14 @@ class ActivityEventsClient(
 
                 override fun onEvent(es: EventSource, id: String?, type: String?, data: String) {
                     try {
-                        // Log.d("SSE", "event: $data")
                         val js = JSONObject(data)
                         val status = js.optString("status")
-                        if (status == "PROCESSED") {
-                            val activityId = js.optInt("activityId", -1)
-                            val idIngreso  = js.optInt("idIngresoCreado", 0)
-                            if (activityId > 0) onProcessed(activityId, idIngreso)
-                        }
+                        val activityId = js.optInt("activityId", -1)
+                        val idIngreso  = js.optInt("idIngresoCreado", 0)
+
+                        if (status != "HEARTBEAT" && activityId > 0)
+                            onProcessed(activityId, idIngreso)
+
                     } catch (e: Exception) {
                         onError(e)
                     }

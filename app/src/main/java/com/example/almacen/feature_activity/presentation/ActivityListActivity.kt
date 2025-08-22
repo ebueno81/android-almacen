@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -14,11 +15,10 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.almacen.catalog.presentation.ArticleListActivity
 import com.example.almacen.catalog.presentation.ClientListActivity
 import com.example.almacen.catalog.presentation.StoreListActivity
-import com.example.almacen.core.network.NetworkModule // BASE_URL
+import com.example.almacen.core.network.NetworkModule
 import com.example.almacen.core.ui.components.AppScaffold
 import com.example.almacen.core.ui.theme.AlmacenTheme
 import com.example.almacen.feature_activity.presentation.ui.ActivityListScreen
@@ -31,23 +31,25 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class ActivityListActivity : ComponentActivity() {
 
+    // ✅ Un solo ViewModel, a nivel de Activity (visible en callbacks fuera de Compose)
+    private val vm: ActivityListViewModel by viewModels()
+
     private val editorLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            recreate()
-        }
+        if (result.resultCode == Activity.RESULT_OK)
+            vm.forceReload()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             AlmacenTheme {
-                val vm: ActivityListViewModel = hiltViewModel()
-
-                // 🔌 Suscripción SSE (una vez por pantalla)
+                // ✅ Inicia SSE y carga inicial UNA sola vez
                 LaunchedEffect(Unit) {
-                    vm.startSse(NetworkModule.BASE_URL) // ej. http://10.0.2.2:8080/
+                    vm.startSse(NetworkModule.BASE_URL) // p.ej. "http://10.0.2.2:8080/"
+                    vm.loadInitial()
                 }
 
                 AppScaffold(
@@ -68,7 +70,7 @@ class ActivityListActivity : ComponentActivity() {
                     bottomBar = {
                         MainBottomBar(
                             current = MainTab.Actividad,
-                            onHome = { goHome()  },
+                            onHome = { goHome() },
                             onActividad = { /* stay */ },
                             onClientes  = { startActivity(Intent(this, ClientListActivity::class.java)) },
                             onAlmacen   = { startActivity(Intent(this, StoreListActivity::class.java)) },
@@ -110,7 +112,7 @@ class ActivityListActivity : ComponentActivity() {
                                 }
                             )
                         },
-                        vm = vm   // 👈👈👈 PASA EL VIEWMODEL AQUÍ
+                        vm = vm // 👈 usa el MISMO ViewModel
                     )
                 }
             }
